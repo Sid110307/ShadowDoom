@@ -1,6 +1,6 @@
 # ShadowDoom
 
-A game that I made using Python (Console-based) and Unity (Graphical).
+A fantasy game that I made using Python (Console-based) and Unity (Graphical).
 
 ## Console-based Game
 
