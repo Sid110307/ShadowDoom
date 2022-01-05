@@ -1,10 +1,8 @@
 # ShadowDoom
 
-A fantasy game that I made using Python (Console-based) and Unity (Graphical).
+A fantasy game that I made using Python (Console-based).
 
-## Console-based Game
-
-### Requirements
+## Requirements
 
 - Python 3.6 or higher
 
@@ -14,7 +12,7 @@ A fantasy game that I made using Python (Console-based) and Unity (Graphical).
 
   - Tkinter
 
-### Usage
+## Usage
 
 > Clone the repository to your computer:
 
@@ -33,28 +31,3 @@ $ python3 ShadowDoom.py
 ```
 
 > Maximize the terminal window for the best experience.
-
-## Graphical
-
-### Operating Systems
-
-- A Windows or a Linux Machine
-- Mac is not supported :(
-
-### Usage
-
-> Clone the repository to your computer:
-
-```sh
-$ git clone https://github.com/Sid110307/ShadowDoom
-
-Cloning into 'ShadowDoom'...
-. . .
-```
-
-> Open the `3D` folder in your file explorer.
->
-> Open the `BuildFiles` folder.
->> Open the `Windows` subfolder if you have a Windows machine and run the executable.
->>
->> Open the `Linux` subfolder if you have a Linux machine and run the executable.
