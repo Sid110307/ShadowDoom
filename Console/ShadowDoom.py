@@ -928,8 +928,7 @@ class Game:
         elif treasure == "a healing potion":
             print("You drink the healing potion.")
             self.health += 50
-            if self.health >= self.max_health:
-                self.health = self.max_health
+            self.health = min(self.health, self.max_health)
             print(f"You now have {self.health} health.")
         elif treasure == "a Colt Anaconda":
             print("Wow, that's rare!")
@@ -954,8 +953,7 @@ class Game:
         print("You feel very strong.")
         sleep(2)
         self.health += 50
-        if self.health >= self.max_health:
-            self.health = self.max_health
+        self.health = min(self.health, self.max_health)
         print(f"You now have {self.health} health.")
         sleep(1)
 
