@@ -1,6 +1,6 @@
 # ShadowDoom
 
-A fantasy game that I made using Python (Console-based).
+A fantasy console game that I made using Python.
 
 ## Requirements
 
@@ -27,7 +27,7 @@ Cloning into 'ShadowDoom'...
 
 ```sh
 $ python3 ShadowDoom.py
-# Or just ./ShadowDoom for Unix-based systems.
+# Or just ./ShadowDoom.py for Unix-based systems.
 ```
 
 > Maximize the terminal window for the best experience.
