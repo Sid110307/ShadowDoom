@@ -377,7 +377,7 @@ class Game:
         self.money = max(self.money, 0)
         self.clear()
         print(" +--------------------------------------------------------------------+")
-        print(" :              Welcome to the Shop! What would you like?              ")
+        print(" :              Welcome to the Shop! What would you like?             :")
         print(" :--------------------------------------------------------------------+")
         print(
             f" Your Money: ${self.money}         Tip: Kill monsters to earn more money.  \n")
