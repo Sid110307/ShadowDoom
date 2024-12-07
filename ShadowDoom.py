@@ -1,33 +1,75 @@
-#!/usr/bin/env python
-__version__ = "1.0.0"
+#!/usr/bin/env python3
+__version__ = "2.0.0"
 
-import sys
+import base64
+import json
 import os
-from time import sleep
+import random
+import sys
+import time
 import tkinter
 from tkinter import filedialog
-import random
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
 
 try:
     import colorama
-    from colorama import Fore, Back
+    from colorama import Fore, Back, Style
     import pygame
 except ImportError:
     import subprocess
-    print("Error: Missing dependencies!\nInstalling...")
 
     try:
-        subprocess.call(["pip", "install", "colorama", "pygame"],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        import colorama
-        from colorama import Fore, Back
-        import pygame
-    except:
+        print("Error: Missing dependencies!\nInstalling...")
+        subprocess.call([sys.executable, "-m", "pip", "install", "colorama", "pygame"],
+                        stdout = subprocess.DEVNULL, stderr = subprocess.STDOUT)
+    except ImportError:
         print("Error: Failed to install dependencies!\nPlease install manually!")
         print("Dependencies: colorama, pygame")
         sys.exit()
+
+    import colorama
+    from colorama import Fore, Back, Style
+    import pygame
+
+
+class TUI:
+    def __init__(self):
+        colorama.init()
+        self.clear()
+
+    @staticmethod
+    def styled_print(message="", fore_color=Fore.RESET, back_color=Back.RESET, style=Style.NORMAL):
+        print(f"{style}{fore_color}{back_color}{message}{Style.RESET_ALL}")
+
+    def decorative_header(self, text, width=60, fore_color=Fore.CYAN):
+        border = "+" + "-" * (width - 2) + "+"
+
+        self.styled_print(border, fore_color)
+        self.styled_print(f"| {text.center(width - 4)} |", fore_color)
+        self.styled_print(border, fore_color)
+
+    def section_title(self, text, width=60, fore_color=Fore.GREEN):
+        self.styled_print(f" {text.center(width)} ", fore_color, style = Style.BRIGHT)
+        self.styled_print("-" * width, fore_color)
+
+    def render_menu(self, options, width=60, fore_color=Fore.YELLOW, border_char="|"):
+        for i, option in enumerate(options, 1):
+            option_text = f"{i}. {option}".center(width - 4)
+            self.styled_print(f"{border_char} {option_text} {border_char}", fore_color)
+
+        self.styled_print("+" + "-" * (width - 2) + "+", fore_color)
+
+    def key_value_display(self, items, width=60, fore_color=Fore.YELLOW, border_char="|"):
+        for key, value in items.items():
+            key_text = f"{key}: {value}".ljust(width - 4)
+            self.styled_print(f"{border_char} {key_text} {border_char}", fore_color)
+
+        self.styled_print("+" + "-" * (width - 2) + "+", fore_color)
+
+    @staticmethod
+    def clear():
+        return os.system("cls" if os.name == "nt" else "clear")
 
 
 class Game:
@@ -35,29 +77,22 @@ class Game:
     def play_music(file: str, loop: bool = True, stop_previous: bool = False, volume: int = 100):
         if stop_previous:
             pygame.mixer.music.stop()
-        pygame.mixer.music.load(file)
+        pygame.mixer.music.load(f"{os.path.dirname(__file__)}/audio/{file}.wav")
         pygame.mixer.music.set_volume(volume / 100)
-        pygame.mixer.music.play(loops=-1 if loop else 0)
+        pygame.mixer.music.play(loops = -1 if loop else 0)
+
         while not pygame.mixer.music.get_busy():
             continue
 
     def play_attack_music(self):
-        self.play_music(
-            f"{os.path.dirname(__file__)}/audio/attack/{random.choice([1, 2, 3, 4, 5, 6])}.wav", False, False)
-
-    def clear(self):
-        return os.system("cls" if os.name == "nt" else "clear")
+        self.play_music(f"attack/{random.choice([1, 2, 3, 4, 5, 6])}", False, False)
 
     def menu(self):
-        self.clear()
-        print("\n+---------------------+")
-        print(": 1- Begin a New Game :")
-        print(":---------------------:")
-        print(": 2- Exit             :")
-        print(":---------------------:")
-        print(": 3- Credits          :")
-        print("+---------------------+\n")
+        self.tui.clear()
+        self.tui.decorative_header("Main Menu")
 
+        options = ["Begin a New Game", "Exit", "Credits"]
+        self.tui.render_menu(options)
         c = input("CHOOSE>> ")
 
         if c == "1":
@@ -67,51 +102,58 @@ class Game:
         elif c == "3":
             self.game_credits()
         else:
-            print("Please enter 1, 2, or 3")
+            self.tui.decorative_header("Invalid Choice!", fore_color = Fore.RED)
             self.menu()
 
     def leave(self):
-        self.clear()
-        print("\n                                            Thanks for Playing!                       ")
-        print("                                              Keep ShadowDooming!                       ")
-        print("\n                                         `o.                                          ")
-        print("                 ````````                `osdys++/:-.`                                  ")
-        print("             `````..........`              `mmd+hhyssso+:.`                             ")
-        print("          `````....-.                       hNmdNMMNmdhyssso/.`                         ")
-        print("        ``  `..` `:do   `:       -`         hMmNNdNMMMMMNmhyyhho-`                      ")
-        print("      ``  `.`     -N/  .ys       :h`       .NMyNNNhdNNMMMMMNmhshddo-`                   ")
-        print("     .`  `.`      sN: `dMh       +Ny       sMMsNMMNhomMMMMMMMm@REMymNNh/`               ")
-        print("    -`  `-        dd+ .Nmm/`  ``-dmm      /NMNsMMMMMhyNMMMMMMN/NmhsydNdo.               ")
-        print("  ..   -`       `Nhh  /`sNdhhhdNo`/     :NMNohMMMMMd/hMMMMMMMsyMMNmyyhmmo.              ")
-        print("   :    :        .Ndm:   yyhMNMyhs     `+NMNy:dMMMMMdodNMMMMMMN/NMMNMMmhhmm+`           ")
-        print("   -    :        .Nmhh  `sdhNsNhmo`   .yNNNssmhMMMMMNodMMMMMMMMdoNMMMMMNmyodh:          ")
-        print("   .    :        .NdyN:-/oosdodoo+/-`omMNdodMMNNNNNMMm+MMMMNMMMMhhNMMMMMMMmssmo`        ")
-        print("   .`   -`       `Nymyd`.mMNmmdNMd-smNNh//mNMNh+--:omN+NNh+/+smNMhmNMNdsshmNNyhh.       ")
-        print("    -   `-       `dhmsd+yNMMMMMMMMyNNNdmh/sNd-      .dym+     `/dNmNN:    `:odmhd:      ")
-        print("    `-   `.       yhdN+myNMMMMMMMMhNMMMMMyNd`        -dy         +mNy         :hdm/     ")
-        print("     `.`  `.`     /h/ddomhMMMMMMMNyNms/+hmN-          h.          `sd`          :dN:    ")
-        print("       .`   ..`   `msNNsymdNMMMNddm/    `do           /             ./`          `om-   ")
-        print("         ```  `..` odmm:.smdMNh-dN-      /`                                        /d`  ")
-        print("           ````` `-:mNN:ysNNmN/ yh                                                  /o  ")
-        print("               ```..+NM+ddshm+/``+`                                                  +. ")
-        print("                     sNdoNNhsd+`                                                      . ")
-        print("                     `yNomNMNyys.                                                       ")
-        print("                      `yNoNMMNhos:                                                      ")
-        print("                       `ymyNMNhy+o+`                                                    ")
-        print("                        `odhNN.`-+ss-                                                   ")
-        print("                          :hdNo   .oho`                                                 ")
-        print("                           .odN+    -yh/`                                               ")
-        print("                             -sms`    .+s:                                              ")
-        print("                               .+s-     .++-                                            ")
-        print("                                 `-/.     `::`                                          ")
-        print("                                   `-.       `                                          ")
-        sleep(5)
-        print(
-            f"\n\n                                         Bye!				       {Fore.RESET}{Back.RESET}")
+        self.tui.clear()
+
+        self.tui.decorative_header("Thanks for Playing!", fore_color = Fore.GREEN, width = 80)
+        self.tui.decorative_header("Keep ShadowDooming!", fore_color = Fore.GREEN, width = 80)
+
+        ascii_art = [
+            "                                         `o.                                          ",
+            "                 ````````                `osdys++/:-.`                                ",
+            "             `````..........`              `mmd+hhyssso+:.`                           ",
+            "          `````....-.                       hNmdNMMNmdhyssso/.`                       ",
+            "        ``  `..` `:do   `:       -`         hMmNNdNMMMMMNmhyyhho-`                    ",
+            "      ``  `.`     -N/  .ys       :h`       .NMyNNNhdNNMMMMMNmhshddo-`                 ",
+            "     .`  `.`      sN: `dMh       +Ny       sMMsNMMNhomMMMMMMMm@REMymNNh/`             ",
+            "    -`  `-        dd+ .Nmm/`  ``-dmm      /NMNsMMMMMhyNMMMMMMN/NmhsydNdo.             ",
+            "  ..   -`       `Nhh  /`sNdhhhdNo`/     :NMNohMMMMMd/hMMMMMMMsyMMNmyyhmmo.            ",
+            "   :    :        .Ndm:   yyhMNMyhs     `+NMNy:dMMMMMdodNMMMMMMN/NMMNMMmhhmm+`         ",
+            "   -    :        .Nmhh  `sdhNsNhmo`   .yNNNssmhMMMMMNodMMMMMMMMdoNMMMMMNmyodh:        ",
+            "   .    :        .NdyN:-/oosdodoo+/-`omMNdodMMNNNNNMMm+MMMMNMMMMhhNMMMMMMMmssmo`      ",
+            "   .`   -`       `Nymyd`.mMNmmdNMd-smNNh//mNMNh+--:omN+NNh+/+smNMhmNMNdsshmNNyhh.     ",
+            "    -   `-       `dhmsd+yNMMMMMMMMyNNNdmh/sNd-      .dym+     `/dNmNN:    `:odmhd:    ",
+            "    `-   `.       yhdN+myNMMMMMMMMhNMMMMMyNd`        -dy         +mNy         :hdm/   ",
+            "     `.`  `.`     /h/ddomhMMMMMMMNyNms/+hmN-          h.          `sd`          :dN:  ",
+            "       .`   ..`   `msNNsymdNMMMNddm/    `do           /             ./`          `om- ",
+            "         ```  `..` odmm:.smdMNh-dN-      /`                                        /d`",
+            "           ````` `-:mNN:ysNNmN/ yh                                                  /o",
+            "               ```..+NM+ddshm+/``+`                                                  +.",
+            "                     sNdoNNhsd+`                                                      .",
+            "                     `yNomNMNyys.                                                       ",
+            "                      `yNoNMMNhos:                                                      ",
+            "                       `ymyNMNhy+o+`                                                    ",
+            "                        `odhNN.`-+ss-                                                   ",
+            "                          :hdNo   .oho`                                                 ",
+            "                           .odN+    -yh/`                                               ",
+            "                             -sms`    .+s:                                              ",
+            "                               .+s-     .++-                                            ",
+            "                                 `-/.     `::`                                          ",
+            "                                   `-.       `                                          ",
+        ]
+        for line in ascii_art:
+            self.tui.styled_print(line, Fore.YELLOW)
+
+        time.sleep(3)
+        self.tui.styled_print("\n\nBye!", Fore.LIGHTCYAN_EX)
         sys.exit()
 
-    def new(self):
+    def reset_player_state(self):
         self.health = 100
+        self.max_health = 100
         self.money = 0
         self.playerdamage = 7
         self.killcount = 0
@@ -130,47 +172,48 @@ class Game:
         self.rusty_sword = False
         self.colt_anaconda = False
 
+    def new(self):
+        self.reset_player_state()
+        self.tui.decorative_header("Starting a New Game!", fore_color = Fore.GREEN)
+        self.tui.styled_print("Your journey begins...", Fore.CYAN)
+
+        time.sleep(2)
         self.home()
 
     def home(self):
         if not pygame.mixer.music.get_busy():
-            self.play_music(
-                f"{os.path.dirname(__file__)}/audio/menu/mainmenu{random.choice(self.main_menu_music)}.wav")
-        self.clear()
+            self.play_music(f"menu/{random.choice(self.main_menu_music)}")
 
-        if self.health >= self.max_health:
-            self.health = self.max_health
+        self.tui.clear()
+        self.health = min(self.health, self.max_health)
         self.money = max(self.money, 0)
 
-        print("\n  +--------------------------------------+")
-        print("  : Welcome to the Village of ShadowDoom :")
-        print("  +--------------------------------------+\n")
-        print(" +-----------------------------------------+")
-        print(" :               Statistics                :")
-        print(" +-----------------------------------------+")
-        print(f"               Health: {self.health} HP	   ")
-        print(f"                Money: ${self.money}	   ")
-        print(f"       Current Weapon: {self.currentweapon}")
-        print(f"        Weapon Damage: {self.playerdamage} ")
-        print(f"                Kills: {self.killcount}	   ")
-        print(" +-----------------------------------------+\n")
-        print(" +-----------------------------------------+")
-        print(" :       What would you like to do?        :")
-        print(" :-----------------------------------------:")
-        print(" : 1 : Go out of your Village and Fight!   :")
-        print(" : 2 : Go to Shop                          :")
-        print(" : 3 : View Inventory                      :")
-        print(" :-----------------------------------------:")
-        print(" : 4 : Save Game                           :")
-        print(" : 5 : Load Game                           :")
-        print(" :-----------------------------------------:")
-        print(" : 6 : Exit to Home Screen                 :")
-        print(" +-----------------------------------------+\n")
+        self.tui.decorative_header("Welcome to the Village of ShadowDoom")
+
+        stats = {
+            "Health":         f"{self.health} HP / {self.max_health} HP",
+            "Money":          f"${self.money}",
+            "Current Weapon": self.currentweapon,
+            "Weapon Damage":  self.playerdamage,
+            "Kills":          self.killcount
+        }
+        self.tui.section_title("Statistics")
+        self.tui.key_value_display(stats)
+
+        options = [
+            "Go out of your Village and Fight!",
+            "Go to Shop",
+            "View Inventory",
+            "Save Game",
+            "Load Game",
+            "Exit to Home Screen"
+        ]
+        self.tui.section_title("What would you like to do?")
+        self.tui.render_menu(options)
 
         c = input("CHOOSE>> ")
-
         if c == "1":
-            self.prebattle()
+            self.pre_battle()
         elif c == "2":
             self.shop()
         elif c == "3":
@@ -182,1362 +225,721 @@ class Game:
         elif c == "6":
             self.menu()
         else:
-            print("Please enter 1, 2, 3, 4, 5 or 6.")
-            sleep(3)
+            self.tui.decorative_header("Invalid Choice!", fore_color = Fore.RED)
+            time.sleep(2)
             self.home()
 
     def inventory(self):
         self.is_inventory = True
-        self.play_music(f"{os.path.dirname(__file__)}/audio/shop.wav")
-        self.clear()
-        print("         +----------------+")
-        print("         : Your Inventory :")
-        print("         +----------------+\n")
-        print(" +---------------------------------+")
-        print(f" Current Weapon: {self.currentweapon}	  ")
-        print(" +---------------------------------+")
-        print("            Other Weapons:		  ")
+        self.play_music("shop")
+        self.tui.clear()
 
-        if self.stick and self.currentweapon != "Stick":
-            print("Stick (5 Damage)")
-            self.possession = True
+        self.tui.decorative_header("Your Inventory")
+        stats = {"Current Weapon": self.currentweapon}
+        self.tui.key_value_display(stats)
+        self.tui.section_title("Other Weapons")
 
-        if self.club and self.currentweapon != "Club":
-            print("Old Club (10 Damage)")
-            self.possession = True
+        weapons = {
+            "Stick":         (self.stick, 5),
+            "Old Club":      (self.club, 10),
+            "Spiked Mace":   (self.spiked_mace, 15),
+            "Fire Axe":      (self.fire_axe, 20),
+            "Spear":         (self.spear, 35),
+            "Double Axe":    (self.double_axe, 40),
+            "Katana":        (self.katana, 50),
+            "Shotgun":       (self.shotgun, 70),
+            "Magic Scythe":  (self.magic_scythe, 90),
+            "Rusty Sword":   (self.rusty_sword, 15),
+            "Colt Anaconda": (self.colt_anaconda, 100),
+        }
 
-        if self.spiked_mace and self.currentweapon != "Spiked Mace":
-            print("Spiked Mace(15 Damage)")
-            self.possession = True
+        possession = False
+        for weapon, (owned, damage) in weapons.items():
+            if owned and self.currentweapon != weapon:
+                self.tui.styled_print(f"{weapon} ({damage} Damage)", Fore.YELLOW)
+                possession = True
 
-        if self.fire_axe and self.currentweapon != "Fire Axe":
-            print("Fire Axe (20 Damage)")
-            self.possession = True
+        if not possession:
+            self.tui.styled_print("You don't have any Weapons. Buy them in the Shop!", Fore.RED)
+            time.sleep(3)
+            pygame.mixer.music.stop()
 
-        if self.spear and self.currentweapon != "Spear":
-            print("Spear (35 Damage)")
-            self.possession = True
+            self.home()
+            return
 
-        if self.double_axe and self.currentweapon != "Double Axe":
-            print("Double Axe (40 Damage)")
-            self.possession = True
+        self.tui.section_title("Equip a Weapon")
+        self.tui.styled_print("Press the corresponding key to equip a weapon or type 'Q' to quit:", Fore.CYAN)
+        equip_keys = {
+            "S": "Stick",
+            "C": "Old Club",
+            "P": "Spiked Mace",
+            "F": "Fire Axe",
+            "R": "Spear",
+            "D": "Double Axe",
+            "K": "Katana",
+            "G": "Shotgun",
+            "M": "Magic Scythe",
+            "T": "Rusty Sword",
+            "A": "Colt Anaconda"
+        }
 
-        if self.katana and self.currentweapon != "Katana":
-            print("Katana(50 Damage)")
-            self.possession = True
+        for key, weapon in equip_keys.items():
+            if weapons[weapon][0]:
+                self.tui.styled_print(f"{key} - {weapon}", Fore.YELLOW)
+        c = input("\nCHOOSE>> ").strip().upper()
 
-        if self.shotgun and self.currentweapon != "Shotgun":
-            print("Shotgun (70 Damage)")
-            self.possession = True
+        if c in equip_keys and weapons[equip_keys[c]][0]:
+            selected_weapon = equip_keys[c]
+            self.currentweapon = selected_weapon
+            self.playerdamage = weapons[selected_weapon][1]
 
-        if self.magic_scythe and self.currentweapon != "Magic Scythe":
-            print("Magic Scythe (90 Damage)")
-            self.possession = True
+            setattr(self, selected_weapon.lower().replace(" ", "_"), False)
+            self.tui.styled_print(f"\nYou have equipped the {selected_weapon}!", Fore.GREEN)
 
-        if self.rusty_sword and self.currentweapon != "Rusty Sword":
-            print("Rusty Sword (15 Damage)")
-            self.possession = True
-
-        if self.colt_anaconda and self.currentweapon != "Colt Anaconda":
-            print("Colt Anaconda (50 Damage)")
-            self.possession = True
-
-        if self.possession == False:
-            print("You don't have any Weapons. Buy them in the Shop!")
-            sleep(3)
+            time.sleep(1)
+            self.inventory()
+        elif c == "Q":
             pygame.mixer.music.stop()
             self.home()
-
-        if self.possession:
-            print(" +---------------------------------+\n\nPress one of the below keys to equip a weapon, or type 'q' to quit: ")
-            if self.stick:
-                print("S - Stick")
-            if self.club:
-                print("C - Old Club")
-            if self.spiked_mace:
-                print("P - Spiked Mace")
-            if self.fire_axe:
-                print("F - Fire Axe")
-            if self.spear:
-                print("R - Spear")
-            if self.double_axe:
-                print("D - Double Axe")
-            if self.katana:
-                print("K - Katana")
-            if self.shotgun:
-                print("G - Shotgun")
-            if self.magic_scythe:
-                print("M - Magic Scythe")
-            if self.rusty_sword:
-                print("T - Rusty Sword")
-            if self.colt_anaconda:
-                print("A - Colt Anaconda")
-
-            c = input("\n\nCHOOSE>> ")
-
-            if c.lower() == "s" and self.stick:
-                self.currentweapon = "Stick"
-                self.playerdamage = 5
-                self.stick = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Stick!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "c" and self.club:
-                self.currentweapon = "Old Club"
-                self.playerdamage = 10
-                self.club = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Old Club!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "p" and self.spiked_mace:
-                self.currentweapon = "Spiked Mace"
-                self.playerdamage = 15
-                self.spiked_mace = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Spiked Mace!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "f" and self.fire_axe:
-                self.currentweapon = "Fire Axe"
-                self.playerdamage = 20
-                self.fire_axe = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Fire Axe!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "r" and self.spear:
-                self.currentweapon = "Spear"
-                self.playerdamage = 35
-                self.spear = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Spear!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "d" and self.double_axe:
-                self.currentweapon = "Double Axe"
-                self.playerdamage = 40
-                self.double_axe = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Double Axe!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "k" and self.katana:
-                self.currentweapon = "Katana"
-                self.playerdamage = 50
-                self.katana = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Katana!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "g" and self.shotgun:
-                self.currentweapon = "Shotgun"
-                self.playerdamage = 70
-                self.shotgun = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Shotgun!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "m" and self.magic_scythe:
-                self.currentweapon = "Magic Scythe"
-                self.playerdamage = 90
-                self.magic_scythe = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Magic Scythe!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "t" and self.rusty_sword:
-                self.currentweapon = "Rusty Sword"
-                self.playerdamage = 15
-                self.rusty_sword = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Rusty Sword!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif c.lower() == "a" and self.colt_anaconda:
-                self.currentweapon = "Colt Anaconda"
-                self.playerdamage = 50
-                self.colt_anaconda = False
-                print(
-                    f"\n{Fore.GREEN}You have equipped the Colt Anaconda!{Fore.LIGHTBLUE_EX}")
-                sleep(1)
-                self.inventory()
-            elif "quit" in c.lower():
-                pygame.mixer.music.stop()
-                self.home()
-            else:
-                print("\nPlease choose a valid option!")
-                sleep(1)
-                self.inventory()
+        else:
+            self.tui.decorative_header("Invalid Choice!", fore_color = Fore.RED)
+            time.sleep(1)
+            self.inventory()
 
     def shop(self):
         if not pygame.mixer.music.get_busy():
-            self.play_music(f"{os.path.dirname(__file__)}/audio/shop.wav")
+            self.play_music("shop")
         self.money = max(self.money, 0)
-        self.clear()
-        print(" +--------------------------------------------------------------------+")
-        print(" :              Welcome to the Shop! What would you like?             :")
-        print(" :--------------------------------------------------------------------+")
-        print(
-            f" Your Money: ${self.money}         Tip: Kill monsters to earn more money.  \n")
+        self.tui.clear()
+
+        self.tui.decorative_header("Welcome to the Shop!", width = 80)
+        stats = {
+            "Your Money": f"${self.money}",
+            "Health":     f"{self.health} HP / {self.max_health} HP"
+        }
+        self.tui.key_value_display(stats, width = 80)
 
         if self.money == 0:
-            print(
-                " You have no money to spend.         Go kill Monsters and earn more!   ")
-            sleep(3)
+            self.tui.styled_print("You have no money to spend. Go kill Monsters and earn more!", Fore.RED)
+            time.sleep(3)
             self.home()
-        else:
-            print(" +-----------------------------------------------------------------------------------------------------+")
-            print(" :                                                                                                     :")
-            print(
-                " : 1- Stick: Naturally crafted from an Oak Tree.                                [$5]      (10 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 2- Old Club: This ol' bird still has a lot of strength in it.               [$10]      (13 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 3- Spiked Mace: Ouch!! It Hurts too much!                                   [$20]      (15 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 4- Fire Axe: Hit it to ring an alarm inside your enemy.                     [$35]      (20 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 5- Spear: Pierce or Stab. The choice is yours.                              [$50]      (35 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 6- Double Axe: Enough to kill 2 people at once.                             [$60]      (40 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 7- Katana: Slice them in half!                                             [$100]      (50 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 8- Shotgun: Boom!                                                          [$200]      (70 Damage)  :")
-            print(" :                                                                                                     :")
-            print(
-                " : 9- Magic Scythe: You will have power beyond that of a God!!                [$250]      (90 Damage)  :")
-            print(" :                                                                                                     :")
-            print(" :-----------------------------------------------------------------------------------------------------+")
-            print(" :                                                                                                     :")
-            print(
-                " : 10- Healing Pill: A small boost.                                             [$5]      (+10 HP)     :")
-            print(" :                                                                                                     :")
-            print(
-                " : 11- Health Potion: Use this to get back on your feet.                       [$20]      (+50 HP)     :")
-            print(" +-----------------------------------------------------------------------------------------------------+")
 
-            c = input("Choose Item or type 'quit' to go back home: ")
+            return
 
-            if c == "1":
-                if self.stick:
-                    print("You already have this item!")
-                elif self.money >= 5:
-                    self.money -= 5
-                    self.playerdamage = 10
-                    self.currentweapon = "Stick"
-                    self.stick = True
+        items = {
+            1:  {
+                "name":        "Stick",
+                "price":       5,
+                "effect":      "+10 Damage",
+                "description": "Naturally crafted from an Oak Tree.",
+                "attr":        "stick"
+            },
+            2:  {
+                "name":        "Old Club",
+                "price":       10,
+                "effect":      "+13 Damage",
+                "description": "This ol' bird still has a lot of strength in it.",
+                "attr":        "club"
+            },
+            3:  {
+                "name":        "Spiked Mace",
+                "price":       20,
+                "effect":      "+15 Damage",
+                "description": "Ouch!! It hurts too much!",
+                "attr":        "spiked_mace"
+            },
+            4:  {
+                "name":        "Fire Axe",
+                "price":       35,
+                "effect":      "+20 Damage",
+                "description": "Hit it to ring an alarm inside your enemy.",
+                "attr":        "fire_axe"
+            },
+            5:  {
+                "name":        "Spear",
+                "price":       50,
+                "effect":      "+35 Damage",
+                "description": "Pierce or Stab. The choice is yours.",
+                "attr":        "spear"
+            },
+            6:  {
+                "name":        "Double Axe",
+                "price":       60,
+                "effect":      "+40 Damage",
+                "description": "Enough to kill two people at once.",
+                "attr":        "double_axe"
+            },
+            7:  {
+                "name":        "Katana",
+                "price":       100,
+                "effect":      "+50 Damage",
+                "description": "Slice them in half!",
+                "attr":        "katana"
+            },
+            8:  {
+                "name":        "Shotgun",
+                "price":       200,
+                "effect":      "+70 Damage",
+                "description": "Boom!",
+                "attr":        "shotgun"
+            },
+            9:  {
+                "name":        "Magic Scythe",
+                "price":       250,
+                "effect":      "+90 Damage",
+                "description": "You will have power beyond that of a God!",
+                "attr":        "magic_scythe"
+            },
+            10: {
+                "name":        "Healing Pill",
+                "price":       5,
+                "effect":      "+10 HP",
+                "description": "A small boost to your health.",
+                "attr":        "health_pill"
+            },
+            11: {
+                "name":        "Health Potion",
+                "price":       20,
+                "effect":      "+50 HP",
+                "description": "Use this to get back on your feet.",
+                "attr":        "health_potion"
+            }
+        }
 
-                    print("You bought the Stick!")
-                else:
-                    print("You don't have enough money to buy the Stick!")
+        self.tui.section_title("Items for Sale", width = 80)
+        for key, item in items.items():
+            self.tui.styled_print(f"{key}: {item['name']} - {item['effect']} [{item['price']}$]", Fore.YELLOW)
+            self.tui.styled_print(f"   {item['description']}", Fore.WHITE)
 
-                sleep(2)
-                self.shop()
-            elif c == "2":
-                if self.club:
-                    print("You already have this item!")
-                elif self.money >= 10:
-                    self.money -= 10
-                    self.playerdamage = 13
-                    self.currentweapon = "Old Club"
-                    self.club = True
+        self.tui.styled_print("Type the item number to buy, or 'quit' to go back home.", Fore.CYAN)
+        choice = input("\nCHOOSE>> ").strip()
 
-                    print("You bought the Old Club!")
-                else:
-                    print("You don't have enough money to buy the Old Club!")
+        if choice.lower() == "quit":
+            self.tui.styled_print("Going back home...", Fore.GREEN)
+            time.sleep(2)
+            pygame.mixer.music.stop()
+            self.home()
+            return
 
-                sleep(2)
-                self.shop()
-            elif c == "3":
-                if self.spiked_mace:
-                    print("You already have this item!")
-                elif self.money >= 20:
-                    self.money -= 20
-                    self.playerdamage = 15
-                    self.currentweapon = "Spiked Mace"
-                    self.spiked_mace = True
+        if not choice.isdigit() or int(choice) not in items:
+            self.tui.styled_print("Please enter a valid number!", Fore.RED)
+            time.sleep(2)
+            self.shop()
+            return
 
-                    print("You bought the Spiked Mace!")
-                else:
-                    print("You don't have enough money to buy the Spiked Mace!")
+        choice = int(choice)
+        item = items[choice]
 
-                sleep(2)
-                self.shop()
-            elif c == "4":
-                if self.fire_axe:
-                    print("You already have this item!")
-                elif self.money >= 35:
-                    self.money -= 35
-                    self.playerdamage = 20
-                    self.currentweapon = "Fire Axe"
-                    self.fire_axe = True
+        if item["attr"] in {"health_pill", "health_potion"}:
+            if self.health >= self.max_health:
+                self.tui.styled_print("You already have full health!", Fore.RED)
+            elif self.money >= item["price"]:
+                self.money -= item["price"]
 
-                    print("You bought the Fire Axe!")
-                else:
-                    print("You don't have enough money to buy the Fire Axe!")
-
-                sleep(2)
-                self.shop()
-            elif c == "5":
-                if self.spear:
-                    print("You already have this item!")
-                elif self.money >= 50:
-                    self.money -= 50
-                    self.playerdamage = 35
-                    self.currentweapon = "Spear"
-                    self.spear = True
-
-                    print("You bought the Spear!")
-                else:
-                    print("You don't have enough money to buy the Spear!")
-
-                sleep(2)
-                self.shop()
-            elif c == "6":
-                if self.double_axe:
-                    print("You already have this item!")
-                elif self.money >= 60:
-                    self.money -= 60
-                    self.playerdamage = 40
-                    self.currentweapon = "Double Axe"
-                    self.double_axe = True
-
-                    print("You bought the Double Axe!")
-                else:
-                    print("You don't have enough money to buy the Double Axe!")
-
-                sleep(2)
-                self.shop()
-            elif c == "7":
-                if self.katana:
-                    print("You already have this item!")
-                elif self.money >= 100:
-                    self.money -= 100
-                    self.playerdamage = 50
-                    self.currentweapon = "Katana"
-                    self.katana = True
-
-                    print("You bought the Katana!")
-                else:
-                    print("You don't have enough money to buy the Katana!")
-
-                sleep(2)
-                self.shop()
-            elif c == "8":
-                if self.shotgun:
-                    print("You already have this item!")
-                elif self.money >= 200:
-                    self.money -= 200
-                    self.playerdamage = 70
-                    self.currentweapon = "Shotgun"
-                    self.shotgun = True
-
-                    print("You bought the Shotgun!")
-                else:
-                    print("You don't have enough money to buy the Shotgun!")
-
-                sleep(2)
-                self.shop()
-            elif c == "9":
-                if self.magic_scythe:
-                    print("You already have this item!")
-                elif self.money >= 250:
-                    self.money -= 250
-                    self.playerdamage = 90
-                    self.currentweapon = "Magic Scythe"
-                    self.magic_scythe = True
-
-                    print("You bought the Magic Scythe!")
-                else:
-                    print("You don't have enough money to buy the Magic Scythe!")
-
-                sleep(2)
-                self.shop()
-            elif c == "10":
-                if self.health >= self.max_health:
-                    print("You already have full health!")
-                elif self.money >= 5:
-                    self.money -= 5
-                    self.health += 10
-
-                    print("Replenished 10 HP!")
-                else:
-                    print("You don't have enough money to buy the Healing Pill!")
-
-                sleep(2)
-                self.shop()
-            elif c == "11":
-                if self.health >= self.max_health:
-                    print("You already have full health!")
-                elif self.money >= 5:
-                    self.money -= 20
-                    self.health += 50
-
-                    print("Replenished 50 HP!")
-                else:
-                    print("You don't have enough money to buy the Health Potion!")
-
-                sleep(2)
-                self.shop()
-            elif "quit" in c.lower():
-                print("Going back home...")
-                sleep(2)
-                pygame.mixer.music.stop()
-                self.home()
+                self.health = min(self.health + (10 if item["attr"] == "health_pill" else 50), self.max_health)
+                self.tui.styled_print(f"You replenished your health by {item['effect']}!", Fore.GREEN)
             else:
-                print("Please enter a valid number!")
-                sleep(2)
-                self.shop()
+                self.tui.styled_print("You don't have enough money!", Fore.RED)
+        else:
+            if getattr(self, item["attr"], False):
+                self.tui.styled_print("You already own this item!", Fore.RED)
+            elif self.money >= item["price"]:
+                self.money -= item["price"]
+                self.playerdamage = int(item["effect"].split('+')[1].split()[0])
+                self.currentweapon = item["name"]
+
+                setattr(self, item["attr"], True)
+                self.tui.styled_print(f"You bought the {item['name']}!", Fore.GREEN)
+            else:
+                self.tui.styled_print("You don't have enough money!", Fore.RED)
+
+        time.sleep(2)
+        self.shop()
 
     def die(self):
-        self.play_music(
-            f'{os.path.dirname(__file__)}/audio/heartbeat.wav', True, False, 200)
-        self.play_music(
-            f'{os.path.dirname(__file__)}/audio/die.wav', False, False, 50)
+        self.play_music("heartbeat", loop = True, stop_previous = False, volume = 200)
+        self.play_music("die", loop = False, stop_previous = False, volume = 50)
         self.money = max(self.money, 0)
         death_phrase = random.choice(self.death_phrases)
-        self.clear()
-        print("\n =     =     = = = = =      =       =          = = = = =      = = = = =     = = = = =     = = = = =     ==    ==")
-        print("  =   =     =         =     =       =          =         =        =         =             =         =   ==    ==")
-        print("   = =      =         =     =       =          =         =        =         = = =         =         =   ==    ==")
-        print("    =       =         =     =       =          =         =        =         = = =         =         =   ==    ==")
-        print("    =       =         =     =       =          =         =        =         =             =         =   		  ")
-        print("    =        = = = = =       = = = =           = = = = =      = = = = =     = = = = =     = = = = =     ==    ==")
+
+        self.tui.clear()
+        print(
+            " =     =     = = = = =      =       =          = = = = =      = = = = =     = = = = =     = = = = =     ==    ==")
+        print(
+            "  =   =     =         =     =       =          =         =        =         =             =         =   ==    ==")
+        print(
+            "    =       =         =     =       =          =         =        =         = = =         =         =   ==    ==")
+        print(
+            "    =       =         =     =       =          =         =        =         =             =         =           ")
+        print(
+            "    =        = = = = =       = = = =           = = = = =      = = = = =     = = = = =     = = = = =     ==    ==")
         print()
-        print(f"					{death_phrase}															         			  \n")
-        print(" +-----------------------------------------+")
-        print(" :               Statistics                :")
-        print(" +-----------------------------------------+")
-        print(f"                Money: ${self.money}			  ")
-        print(f"       Current Weapon: {self.currentweapon}	  ")
-        print(f"                Kills: {self.killcount}		  ")
-        print(" +-----------------------------------------+")
-        sleep(5)
-        print("\nBut by some magic from a village wizard, you live again! But lose all your weapons and money somehow.\n")
-        input("Press enter to start a new game...")
-        sleep(1)
 
-        self.health = 100
-        self.money = 0
-        self.playerdamage = 7
-        self.currentweapon = "Bare Hands"
-        self.possession = False
+        self.tui.styled_print(death_phrase, Fore.YELLOW, style = Style.BRIGHT)
+        self.tui.section_title("Statistics")
+        stats = {
+            "Max Health":     f"{self.max_health} HP",
+            "Money":          f"${self.money}",
+            "Current Weapon": self.currentweapon,
+            "Kills":          self.killcount
+        }
+        self.tui.key_value_display(stats)
 
-        self.stick = False
-        self.club = False
-        self.spiked_mace = False
-        self.fire_axe = False
-        self.spear = False
-        self.double_axe = False
-        self.katana = False
-        self.shotgun = False
-        self.magic_scythe = False
-        self.rusty_sword = False
-        self.colt_anaconda = False
+        time.sleep(5)
+        self.tui.styled_print("But by some magic from a village wizard, you live again!\n", Fore.CYAN)
+        self.tui.styled_print("However, you lose all your weapons and money.", Fore.CYAN)
 
+        input("\nPress Enter to continue...")
+
+        self.reset_player_state()
         pygame.mixer.music.stop()
         self.home()
 
-    def prebattle(self):
-        self.clear()
-        self.play_music(
-            f'{os.path.dirname(__file__)}/audio/attack.wav', True, False)
-        print("\nGet Ready to Fight!")
-        sleep(2)
+    def pre_battle(self):
+        self.tui.clear()
+        self.play_music("attack", loop = True, stop_previous = False)
+        self.tui.decorative_header("Get Ready to Fight!", fore_color = Fore.RED)
+        time.sleep(2)
 
-        self.monsterhealth = 30
-        self.monsterhealth2 = 60
-        self.monsterhealth3 = 60
-        self.monsterhealth4 = 60
-        self.monsterhealth5 = 60
+        base_health = [30, 60, 60, 60, 60]
+        base_damage = [4, 8, 15, 20, 35]
 
-        self.monsterdamage = 4
-        self.monsterdamage2 = 8
-        self.monsterdamage3 = 15
-        self.monsterdamage4 = 20
-        self.monsterdamage5 = 35
+        difficulty_settings = [
+            # (min kill count, max kill count, difficulty, max health, health list, damage list)
+            (0, 5, 1, 100, [30, 60, 70, 75, 80], [4, 8, 15, 20, 35]),
+            (6, 10, 2, 200, [35, 65, 75, 80, 85], [5, 10, 15, 20, 35]),
+            (11, 16, 3, 200, [45, 70, 80, 85, 95], [7, 15, 20, 25, 40]),
+            (17, 25, 4, 300, [50, 75, 85, 90, 100], [8, 20, 25, 30, 40]),
+            (26, 35, 5, 300, [55, 80, 90, 95, 105], [10, 25, 30, 35, 50]),
+            (36, 45, 6, 400, [60, 85, 95, 100, 110], [15, 30, 35, 40, 50]),
+            (46, 55, 7, 400, [65, 90, 100, 105, 115], [20, 35, 40, 45, 60]),
+            (56, 65, 8, 500, [70, 95, 105, 110, 120], [25, 40, 45, 50, 65]),
+            (66, 75, 9, 500, [75, 100, 110, 115, 125], [35, 50, 55, 60, 75]),
+            (76, 85, 10, 600, [90, 105, 115, 120, 130], [40, 55, 60, 65, 80]),
+            (86, 95, 11, 600, [95, 110, 120, 125, 135], [50, 65, 70, 75, 90]),
+            (96, 100, 12, 700, [100, 115, 125, 130, 140], [55, 70, 75, 80, 95]),
+        ]
 
-        if self.killcount >= 0 and self.killcount <= 5:
-            self.difficulty = 1
-            self.monsterhealth = 30
-            self.monsterhealth2 = 60
-            self.monsterhealth3 = 70
-            self.monsterhealth4 = 75
-            self.monsterhealth5 = 80
+        for start, end, diff, max_hp, health_list, damage_list in difficulty_settings:
+            if start <= self.killcount <= end:
+                self.difficulty = diff
+                self.max_health = max_hp
+                base_health = health_list
+                base_damage = damage_list
+                break
 
-            self.monsterdamage = 4
-            self.monsterdamage2 = 8
-            self.monsterdamage3 = 15
-            self.monsterdamage4 = 20
-            self.monsterdamage5 = 35
-        elif self.killcount >= 6 and self.killcount <= 10:
-            self.difficulty = 2
-            self.max_health = 200
-            self.monsterhealth = 35
-            self.monsterhealth2 = 65
-            self.monsterhealth3 = 75
-            self.monsterhealth4 = 80
-            self.monsterhealth5 = 85
-
-            self.monsterdamage = 5
-            self.monsterdamage2 = 10
-            self.monsterdamage3 = 15
-            self.monsterdamage4 = 20
-            self.monsterdamage5 = 35
-        elif self.killcount >= 11 and self.killcount <= 16:
-            self.difficulty = 3
-            self.monsterhealth = 45
-            self.monsterhealth2 = 70
-            self.monsterhealth3 = 80
-            self.monsterhealth4 = 85
-            self.monsterhealth5 = 95
-
-            self.monsterdamage = 7
-            self.monsterdamage2 = 15
-            self.monsterdamage3 = 20
-            self.monsterdamage4 = 25
-            self.monsterdamage5 = 40
-        elif self.killcount >= 17 and self.killcount <= 25:
-            self.difficulty = 4
-            self.max_health = 300
-            self.monsterhealth = 50
-            self.monsterhealth2 = 75
-            self.monsterhealth3 = 85
-            self.monsterhealth4 = 90
-            self.monsterhealth5 = 100
-
-            self.monsterdamage = 8
-            self.monsterdamage2 = 20
-            self.monsterdamage3 = 25
-            self.monsterdamage4 = 30
-            self.monsterdamage5 = 40
-        elif self.killcount >= 26 and self.killcount <= 35:
-            self.difficulty = 5
-            self.monsterhealth = 55
-            self.monsterhealth2 = 80
-            self.monsterhealth3 = 90
-            self.monsterhealth4 = 95
-            self.monsterhealth5 = 105
-
-            self.monsterdamage = 10
-            self.monsterdamage2 = 25
-            self.monsterdamage3 = 30
-            self.monsterdamage4 = 35
-            self.monsterdamage5 = 50
-        elif self.killcount >= 36 and self.killcount <= 45:
-            self.difficulty = 6
-            self.max_health = 400
-            self.monsterhealth = 60
-            self.monsterhealth2 = 85
-            self.monsterhealth3 = 95
-            self.monsterhealth4 = 100
-            self.monsterhealth5 = 110
-
-            self.monsterdamage = 15
-            self.monsterdamage2 = 30
-            self.monsterdamage3 = 35
-            self.monsterdamage4 = 40
-            self.monsterdamage5 = 50
-        elif self.killcount >= 46 and self.killcount <= 55:
-            self.difficulty = 7
-            self.monsterhealth = 65
-            self.monsterhealth2 = 90
-            self.monsterhealth3 = 100
-            self.monsterhealth4 = 105
-            self.monsterhealth5 = 115
-
-            self.monsterdamage = 20
-            self.monsterdamage2 = 35
-            self.monsterdamage3 = 40
-            self.monsterdamage4 = 45
-            self.monsterdamage5 = 60
-        elif self.killcount >= 56 and self.killcount <= 65:
-            self.difficulty = 8
-            self.max_health = 500
-            self.monsterhealth = 70
-            self.monsterhealth2 = 95
-            self.monsterhealth3 = 105
-            self.monsterhealth4 = 110
-            self.monsterhealth5 = 120
-
-            self.monsterdamage = 25
-            self.monsterdamage2 = 40
-            self.monsterdamage3 = 45
-            self.monsterdamage4 = 50
-            self.monsterdamage5 = 65
-        elif self.killcount >= 66 and self.killcount <= 75:
-            self.difficulty = 9
-            self.monsterhealth = 75
-            self.monsterhealth2 = 100
-            self.monsterhealth3 = 110
-            self.monsterhealth4 = 115
-            self.monsterhealth5 = 125
-
-            self.monsterdamage = 35
-            self.monsterdamage2 = 50
-            self.monsterdamage3 = 55
-            self.monsterdamage4 = 60
-            self.monsterdamage5 = 75
-        elif self.killcount >= 76 and self.killcount <= 85:
-            self.difficulty = 10
-            self.max_health = 600
-            self.monsterhealth = 90
-            self.monsterhealth2 = 105
-            self.monsterhealth3 = 115
-            self.monsterhealth4 = 120
-            self.monsterhealth5 = 130
-
-            self.monsterdamage = 40
-            self.monsterdamage2 = 55
-            self.monsterdamage3 = 60
-            self.monsterdamage4 = 65
-            self.monsterdamage5 = 80
-        elif self.killcount >= 86 and self.killcount <= 95:
-            self.difficulty = 11
-            self.monsterhealth = 95
-            self.monsterhealth2 = 110
-            self.monsterhealth3 = 120
-            self.monsterhealth4 = 125
-            self.monsterhealth5 = 135
-
-            self.monsterdamage = 50
-            self.monsterdamage2 = 65
-            self.monsterdamage3 = 70
-            self.monsterdamage4 = 75
-            self.monsterdamage5 = 90
-        elif self.killcount >= 96 and self.killcount <= 100:
-            self.difficulty = 12
-            self.max_health = 700
-            self.monsterhealth = 100
-            self.monsterhealth2 = 115
-            self.monsterhealth3 = 125
-            self.monsterhealth4 = 130
-            self.monsterhealth5 = 140
-
-            self.monsterdamage = 55
-            self.monsterdamage2 = 70
-            self.monsterdamage3 = 75
-            self.monsterdamage4 = 80
-            self.monsterdamage5 = 95
-        elif self.killcount > 100:
+        if self.killcount > 100:
             self.difficulty += 0.1
-            self.monsterhealth += 2
-            self.monsterhealth2 += 4
-            self.monsterhealth3 += 6
-            self.monsterhealth4 += 8
-            self.monsterhealth5 += 10
+            base_health = [h + (i * 2) for i, h in enumerate(base_health)]
+            base_damage = [d + (i + 1) for i, d in enumerate(base_damage)]
 
-            self.monsterdamage += 1
-            self.monsterdamage2 += 2
-            self.monsterdamage3 += 3
-            self.monsterdamage4 += 4
-            self.monsterdamage5 += 5
-
-        self.monsterhealth = int(self.monsterhealth / 1.5)
-        self.monsterhealth2 = int(self.monsterhealth2 / 1.5)
-        self.monsterhealth3 = int(self.monsterhealth3 / 1.5)
-        self.monsterhealth4 = int(self.monsterhealth4 / 1.5)
-        self.monsterhealth5 = int(self.monsterhealth5 / 1.5)
-
-        self.monsterdamage = int(self.monsterdamage / 1.5)
-        self.monsterdamage2 = int(self.monsterdamage2 / 1.5)
-        self.monsterdamage3 = int(self.monsterdamage3 / 1.5)
-        self.monsterdamage4 = int(self.monsterdamage4 / 1.5)
-        self.monsterdamage5 = int(self.monsterdamage5 / 1.5)
+        base_health = [int(h / 1.5) for h in base_health]
+        base_damage = [int(d / 1.5) for d in base_damage]
 
         self.monster = random.choice(self.monsters_list)
-        print()
+        article = "an" if self.monster[0].lower() in "aeiou" else "a"
+        self.tui.styled_print(f"You encounter {article} {self.monster}!", Fore.YELLOW, style = Style.BRIGHT)
 
-        if self.monster[0].lower() in ["A", "E", "I", "O", "U", "a", "e", "i", "o", "u"]:
-            print(f"You encounter an {self.monster}!")
-        else:
-            print(f"You encounter a {self.monster}!")
+        monster_index = self.monsters_list.index(self.monster)
+        setattr(self, f"monsterhealth{monster_index}", base_health[monster_index])
+        setattr(self, f"monsterdamage{monster_index}", base_damage[monster_index])
 
-        random.choice(random.choices(
-            population=[self.encounter1, self.encounter2,
-                        self.encounter3, self.encounter4, self.encounter5],
-            weights=[0.3, 0.25, 0.2, 0.15, 0.1]))()
+        self.encounter(monster_index)
 
     def treasure(self):
-        self.clear()
-        self.play_music(f'{os.path.dirname(__file__)}/audio/treasure.wav')
-        print("\nYou found a treasure chest!\n")
-        print("                 _.--.          ")
-        print("             _.-'_:-'||         ")
-        print("         _.-'_.-::::'||         ")
-        print("    _.-:'_.-::::::'  ||         ")
-        print("  .'`-.-:::::::'     ||         ")
-        print(" /.'`;|:::::::'      ||_        ")
-        print("||   ||::::::'     _.;._'-._    ")
-        print("||   ||:::::'  _.-!oo @.!-._'-. ")
-        print("\\'.  ||:::::.-!()oo @!()@.-'_.|")
-        print(" '.'-;|:.-'.&$@.& ()$%-'o.'\\U||")
-        print("   `>'-.!@%()@'@_%-'_.-o _.|'|| ")
-        print("    ||-._'-.@.-'_.-' _.-o  |'|| ")
-        print("    ||=[ '-._.-\\U/.-'    o |'||")
-        print("    || '-.]=|| |'|      o  |'|| ")
-        print("    ||      || |'|        _| '; ")
-        print("    ||      || |'|    _.-'_.-'  ")
-        print("    |'-._   || |'|_.-'_.-'      ")
-        print("     '-._'-.|| |' `_.-'         ")
-        print("         '-.||_/.-'             ")
-        print("            '-.__.              ")
-        print("                                ")
-        print("You open the treasure chest and find...", end=" ")
+        self.tui.clear()
+        self.play_music("treasure")
+        self.tui.decorative_header("You found a treasure chest!")
+        self.tui.styled_print(
+            """
+                 _.--.          
+             _.-'_:-'||         
+         _.-'_.-::::'||         
+        _.-:'_.-::::::'  ||         
+      .'`-.-:::::::'     ||         
+     /.'`;|:::::::'      ||_        
+    ||   ||::::::'     _.;._'-._    
+    ||   ||:::::'  _.-!oo @.!-._'-. 
+    \\'.  ||:::::.-!()oo @!()@.-'_.|
+     '.'-;|:.-'.&$@.& ()$%-'o.'\\U||
+       `>'-.!@%()@'@_%-'_.-o _.|'|| 
+        ||-._'-.@.-'_.-' _.-o  |'|| 
+        ||=[ '-._.-\\U/.-'    o |'|| 
+        || '-.]=|| |'|      o  |'|| 
+        ||      || |'|        _| '; 
+        ||      || |'|    _.-'_.-'  
+        |'-._   || |'|_.-'_.-'      
+         '-._'-.|| |' `_.-'         
+             '-.||_/.-'             
+                '-.__.              
+            """,
+            Fore.YELLOW,
+        )
+        self.tui.styled_print("You open the treasure chest and find...", Fore.CYAN)
+        time.sleep(2)
 
-        sleep(2)
-        treasure = random.choice(random.choices(
-            population=self.treasure_list, weights=self.treasure_weights))
-        print(f"{treasure}!")
-        if treasure == r"\d* Gold":
-            print(
-                f"\nKa-Ching! You found {int(treasure.replace('Gold', ''))} Gold!")
-            self.money += int(treasure.replace("Gold", ""))
+        treasure = random.choice(random.choices(population = self.treasure_list, weights = self.treasure_weights))
+        self.tui.styled_print(f"{treasure}!", Fore.GREEN, style = Style.BRIGHT)
+
+        if "Gold" in treasure:
+            amount = int(treasure.replace("Gold", "").strip())
+            self.money += amount
             self.money = max(self.money, 0)
+            self.tui.styled_print(f"Ka-Ching! You found {amount} Gold!", Fore.YELLOW)
         elif treasure == "An old rusty sword":
-            print("You equip the sword.")
+            self.tui.styled_print("You equip the sword.", Fore.CYAN)
             self.rusty_sword = True
-            self.weapon = treasure
+            self.currentweapon = "Rusty Sword"
         elif treasure in {"nothing", "some Dust"}:
-            print("Damn, just your luck.")
+            self.tui.styled_print("Damn, just your luck.", Fore.RED)
         elif treasure == "a Mystery Liquid":
-            print("Drink the liquid?")
+            self.tui.styled_print("You found a Mystery Liquid. Drink it?", Fore.CYAN)
+            c = input("(y/n) ").lower()
+            while c not in ["y", "n"]:
+                self.tui.styled_print("Please enter a valid option (y/n).", Fore.RED)
+                c = input("(y/n) ").lower()
 
-            c = input("(y/n) ")
-
-            while c.lower() not in ["y", "n"]:
-                if c.lower() == "y":
-                    print("You drink the Mystery Liquid.")
-                    sleep(1)
-                    random.choice(random.choices(population=[self.mystery_liquid1, self.mystery_liquid2, self.mystery_liquid3,
-                                                             self.mystery_liquid4], weights=[0.3, 0.25, 0.2, 0.15]))()
-                elif c.lower() == "n":
-                    print("You decide to not drink the liquid.")
-                else:
-                    print("Please enter a valid option.")
+            if c == "y":
+                self.tui.styled_print("You drink the Mystery Liquid...", Fore.YELLOW)
+                time.sleep(1)
+                random.choice(random.choices(
+                    population = [self.mystery_liquid1, self.mystery_liquid2, self.mystery_liquid3,
+                                  self.mystery_liquid4], weights = [0.3, 0.25, 0.2, 0.15]))()
+            elif c == "n":
+                self.tui.styled_print("You decide not to drink the liquid.", Fore.CYAN)
         elif treasure == "a healing potion":
-            print("You drink the healing potion.")
+            self.tui.styled_print("You drink the healing potion.", Fore.GREEN)
             self.health += 50
             self.health = min(self.health, self.max_health)
-            print(f"You now have {self.health} health.")
+            self.tui.styled_print(f"You now have {self.health} health.", Fore.YELLOW)
         elif treasure == "a Colt Anaconda":
-            print("Wow, that's rare!")
-            print("You equip the Colt Anaconda.")
+            self.tui.styled_print("Wow, that's rare!", Fore.YELLOW)
+            self.tui.styled_print("You equip the Colt Anaconda.", Fore.CYAN)
             self.colt_anaconda = True
-            self.weapon = treasure
+            self.currentweapon = "Colt Anaconda"
 
         pygame.mixer.music.stop()
-        sleep(2)
+        time.sleep(2)
         self.home()
 
     def mystery_liquid1(self):
+        print("You feel very strong.")
+        time.sleep(2)
+        self.health += 50
+        self.health = min(self.health, self.max_health)
+
+        print(f"You now have {self.health} health.")
+        time.sleep(1)
+
+    def mystery_liquid2(self):
         print("You feel a bit dizzy.")
-        sleep(2)
+        time.sleep(2)
         self.health -= 10
         if self.health <= 0:
             self.health = 5
-        print(f"You now have {self.health} health.")
-        sleep(1)
 
-    def mystery_liquid2(self):
-        print("You feel very strong.")
-        sleep(2)
-        self.health += 50
-        self.health = min(self.health, self.max_health)
         print(f"You now have {self.health} health.")
-        sleep(1)
+        time.sleep(1)
 
     def mystery_liquid3(self):
         self.money = max(self.money, 0)
         print("You suddenly vomit some paper.")
-        sleep(2)
+        time.sleep(2)
         print("Nope, it's cash!")
         self.money += 100
+
         print(f"You now have {self.money} money.")
-        sleep(1)
+        time.sleep(1)
 
     def mystery_liquid4(self):
         print("You feel nothing.")
-        sleep(1)
+        time.sleep(1)
         print("You now feel a bit stronger, but nothing else.")
         self.playerdamage += 10
         print("You go back to your village.")
-        sleep(2)
+
+        time.sleep(2)
         self.home()
 
-    def encounter1(self):
-        print(" +---------------------------------------------+")
-        print(f"   You: {self.health} HP   Money: ${self.money}")
-        print(
-            f"   Enemy: {self.monsterhealth} HP     Damage: {self.monsterdamage}")
-        print(" +---------------------------------------------+\n")
-        print("1 - Attack")
-        print("2 - Run back to your village like a coward\n")
+    def encounter(self, monster_index):
+        monster_health = getattr(self, f"monsterhealth{monster_index}")
+        monster_damage = getattr(self, f"monsterdamage{monster_index}")
 
-        c = input("CHOOSE>> ")
+        self.tui.clear()
+        self.tui.decorative_header("Encounter!", fore_color = Fore.RED)
+        stats = {
+            "You (HP)":             f"{self.health} HP",
+            "Money":                f"${self.money}",
+            "Your Damage":          f"{self.playerdamage}",
+            f"{self.monster} (HP)": f"{monster_health} HP",
+            "Enemy Damage":         f"{monster_damage}",
+        }
+        self.tui.key_value_display(stats)
 
+        self.tui.section_title("What would you like to do?")
+        options = ["Attack", "Retreat back to your village"]
+        self.tui.render_menu(options)
+
+        c = input("\nCHOOSE>> ")
         if c == "1":
-            self.clear()
-            self.attack1()
+            self.tui.clear()
+            self.attack(monster_index)
         elif c == "2":
-            print("\nYou run back to your village like a coward.")
-            sleep(1)
+            self.tui.styled_print("\nYou retreat back to your village.", Fore.YELLOW)
+            time.sleep(1)
             self.home()
         else:
-            print("Please enter a valid option.")
-            sleep(2)
-            self.clear()
-            self.encounter1()
+            self.tui.styled_print("Please enter a valid option.", Fore.RED)
+            time.sleep(2)
+            self.encounter(monster_index)
 
-    def attack1(self):
+    def attack(self, monster_index):
+        monster_health_attr = f"monsterhealth{monster_index}"
+        monster_damage_attr = f"monsterdamage{monster_index}"
+
+        monster_health = getattr(self, monster_health_attr)
+        monster_damage = getattr(self, monster_damage_attr)
+
         self.play_attack_music()
-        self.health -= self.monsterdamage
-        self.monsterhealth -= self.playerdamage
+        self.health -= monster_damage
+        monster_health -= self.playerdamage
 
-        if self.monsterhealth <= 0:
+        if monster_health <= 0:
+            setattr(self, monster_health_attr, 0)
             if self.health <= 0:
                 self.die()
 
-            print(f"\nYou killed the {self.monster}!")
+            self.tui.styled_print(f"\nYou killed the {self.monster}!", Fore.GREEN)
             self.killcount += 1
-            self.money += int(random.uniform(self.difficulty,
-                              self.difficulty * 5)) * 2
-            sleep(2)
-            self.continue1()
+
+            reward = int(random.uniform(self.difficulty, self.difficulty * 5)) * 2
+            self.money += reward
+            self.tui.styled_print(f"You earned ${reward}!", Fore.YELLOW)
+
+            time.sleep(2)
+            self.continue_journey()
         elif self.health <= 0:
             self.die()
         else:
-            print(f"\n\n{random.choice(self.attack_phrases)}")
-            self.encounter1()
+            self.tui.styled_print(f"\n\n{random.choice(self.attack_phrases)}", Fore.CYAN)
+            setattr(self, monster_health_attr, monster_health)
+            self.encounter(monster_index)
 
-    def continue1(self):
-        self.clear()
-        print("Do you want to continue on your journey?\n")
-        c = input("1 - Yes\n2 - No\n\nCHOOSE>> ")
+    def continue_journey(self):
+        self.tui.clear()
+        self.tui.decorative_header("Continue Your Journey?")
 
+        options = ["Yes", "No"]
+        self.tui.render_menu(options)
+
+        c = input("\nCHOOSE>> ")
         if c == "1":
-            print("\nYou continue on your journey.")
-            sleep(1)
-            random.choice(random.choices(
-                population=self.journey_events, weights=self.journey_events_chances))()
+            self.tui.styled_print("\nYou continue on your journey.", Fore.GREEN)
+            time.sleep(1)
+            random.choice(random.choices(population = self.journey_events, weights = self.journey_events_chances))()
         elif c == "2":
-            print("\nYou go back to your village like a coward.")
-            sleep(1)
+            self.tui.styled_print("\nYou go back to your village.", Fore.YELLOW)
+            time.sleep(1)
             self.home()
         else:
-            print("Please enter 1 or 2.")
-            sleep(1)
-            self.continue1()
-
-    def encounter2(self):
-        print(" +---------------------------------------------+")
-        print(f"   You: {self.health} HP   Money: ${self.money}")
-        print(
-            f"   Enemy: {self.monsterhealth2} HP     Damage: {self.monsterdamage2}")
-        print(" +---------------------------------------------+\n")
-        print("1 - Attack")
-        print("2 - Run back to your village like a coward\n")
-
-        c = input("CHOOSE>> ")
-
-        if c == "1":
-            self.clear()
-            self.attack2()
-        elif c == "2":
-            print("\nYou run back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter a valid option.")
-            sleep(2)
-            self.clear()
-            self.encounter2()
-
-    def attack2(self):
-        self.play_attack_music()
-        self.health -= self.monsterdamage2
-        self.monsterhealth2 -= self.playerdamage
-
-        if self.monsterhealth2 <= 0:
-            if self.health <= 0:
-                self.die()
-
-            print(f"\nYou killed the {self.monster}!")
-            self.killcount += 1
-            self.money += int(random.uniform(self.difficulty,
-                              self.difficulty * 5)) * 2
-            sleep(2)
-            self.continue2()
-        elif self.health <= 0:
-            self.die()
-        else:
-            print(f"\n\n{random.choice(self.attack_phrases)}")
-            self.encounter2()
-
-    def continue2(self):
-        self.clear()
-        print("Do you want to continue on your journey?\n")
-        c = input("1 - Yes\n2 - No\n\nCHOOSE>> ")
-
-        if c == "1":
-            print("\nYou continue on your journey.")
-            sleep(1)
-            random.choice(random.choices(
-                population=self.journey_events, weights=self.journey_events_chances))()
-        elif c == "2":
-            print("\nYou go back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter 1 or 2.")
-            sleep(1)
-            self.continue2()
-
-    def encounter3(self):
-        print(" +---------------------------------------------+")
-        print(f"   You: {self.health} HP   Money: ${self.money}")
-        print(
-            f"   Enemy: {self.monsterhealth3} HP     Damage: {self.monsterdamage3}")
-        print(" +---------------------------------------------+\n")
-        print("1 - Attack")
-        print("2 - Run back to your village like a coward\n")
-
-        c = input("CHOOSE>> ")
-
-        if c == "1":
-            self.clear()
-            self.attack3()
-        elif c == "2":
-            print("\nYou run back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter a valid option.")
-            sleep(2)
-            self.clear()
-            self.encounter3()
-
-    def attack3(self):
-        self.play_attack_music()
-        self.health -= self.monsterdamage3
-        self.monsterhealth3 -= self.playerdamage
-
-        if self.monsterhealth3 <= 0:
-            if self.health <= 0:
-                self.die()
-
-            print(f"\nYou killed the {self.monster}!")
-            self.killcount += 1
-            self.money += int(random.uniform(self.difficulty,
-                              self.difficulty * 5)) * 2
-            sleep(2)
-            self.continue3()
-        elif self.health <= 0:
-            self.die()
-        else:
-            print(f"\n\n{random.choice(self.attack_phrases)}")
-            self.encounter3()
-
-    def continue3(self):
-        self.clear()
-        print("Do you want to continue on your journey?\n")
-        c = input("1 - Yes\n2 - No\n\nCHOOSE>> ")
-
-        if c == "1":
-            print("\nYou continue on your journey.")
-            sleep(1)
-            random.choice(random.choices(
-                population=self.journey_events, weights=self.journey_events_chances))()
-        elif c == "2":
-            print("\nYou go back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter 1 or 2.")
-            sleep(1)
-            self.continue3()
-
-    def encounter4(self):
-        print(" +---------------------------------------------+")
-        print(f"   You: {self.health} HP   Money: ${self.money}")
-        print(
-            f"   Enemy: {self.monsterhealth4} HP     Damage: {self.monsterdamage4}")
-        print(" +---------------------------------------------+\n")
-        print("1 - Attack")
-        print("2 - Run back to your village like a coward\n")
-
-        c = input("CHOOSE>> ")
-
-        if c == "1":
-            self.clear()
-            self.attack4()
-        elif c == "2":
-            print("\nYou run back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter a valid option.")
-            sleep(2)
-            self.clear()
-            self.encounter4()
-
-    def attack4(self):
-        self.play_attack_music()
-        self.health -= self.monsterdamage4
-        self.monsterhealth4 -= self.playerdamage
-
-        if self.monsterhealth4 <= 0:
-            if self.health <= 0:
-                self.die()
-
-            print(f"\nYou killed the {self.monster}!")
-            self.killcount += 1
-            self.money += int(random.uniform(self.difficulty,
-                              self.difficulty * 5)) * 2
-            sleep(2)
-            self.continue4()
-        elif self.health <= 0:
-            self.die()
-        else:
-            print(f"\n\n{random.choice(self.attack_phrases)}")
-            self.encounter4()
-
-    def continue4(self):
-        self.clear()
-        print("Do you want to continue on your journey?\n")
-        c = input("1 - Yes\n2 - No\n\nCHOOSE>> ")
-
-        if c == "1":
-            print("\nYou continue on your journey.")
-            sleep(1)
-            random.choice(random.choices(
-                population=self.journey_events, weights=self.journey_events_chances))()
-        elif c == "2":
-            print("\nYou go back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter 1 or 2.")
-            sleep(1)
-            self.continue4()
-
-    def encounter5(self):
-        print(" +---------------------------------------------+")
-        print(f"   You: {self.health} HP   Money: ${self.money}")
-        print(
-            f"   Enemy: {self.monsterhealth5} HP     Damage: {self.monsterdamage5}")
-        print(" +---------------------------------------------+\n")
-        print("1 - Attack")
-        print("2 - Run back to your village like a coward\n")
-
-        c = input("CHOOSE>> ")
-
-        if c == "1":
-            self.clear()
-            self.attack5()
-        elif c == "2":
-            print("\nYou run back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter 1 or 2.")
-            sleep(1)
-            self.encounter5()
-
-    def attack5(self):
-        self.play_attack_music()
-        self.health -= self.monsterdamage5
-        self.monsterhealth5 -= self.playerdamage
-
-        if self.monsterhealth5 <= 0:
-            if self.health <= 0:
-                self.die()
-
-            print(f"\nYou killed the {self.monster}!")
-            self.killcount += 1
-            self.money += int(random.uniform(self.difficulty,
-                              self.difficulty * 5)) * 2
-            sleep(2)
-            self.continue5()
-        elif self.health <= 0:
-            self.die()
-        else:
-            print(f"\n\n{random.choice(self.attack_phrases)}")
-            self.encounter5()
-
-    def continue5(self):
-        self.clear()
-        print("Do you want to continue on your journey?\n")
-        c = input("1 - Yes\n2 - No\n\nCHOOSE>> ")
-
-        if c == "1":
-            print("\nYou continue on your journey.")
-            sleep(1)
-            random.choice(random.choices(
-                population=self.journey_events, weights=self.journey_events_chances))()
-        elif c == "2":
-            print("\nYou go back to your village like a coward.")
-            sleep(1)
-            self.home()
-        else:
-            print("Please enter 1 or 2.")
-            sleep(1)
-            self.continue5()
+            self.tui.styled_print("Please enter 1 or 2.", Fore.RED)
+            time.sleep(1)
+            self.continue_journey()
 
     def save_game(self):
-        self.clear()
-        print("\nSaving game...")
+        self.tui.clear()
+        self.tui.decorative_header("Saving Game...", fore_color = Fore.CYAN)
 
         root = tkinter.Tk()
         root.withdraw()
         file_path = filedialog.asksaveasfilename(
-            defaultextension=".sdoom",
-            title="Save game as...",
-            filetypes=[("ShadowDoom Save File", "*.sdoom")])
+            defaultextension = ".sdoom",
+            title = "Save Game As...",
+            filetypes = [("ShadowDoom Save File", "*.sdoom")],
+        )
 
-        if file_path == "":
-            print("\nGame not saved.")
-            sleep(1)
+        if not file_path:
+            self.tui.styled_print("\nGame not saved.", Fore.RED)
+            time.sleep(1)
+            self.home()
+            return
+
+        game_data = {
+            "difficulty":     self.difficulty,
+            "health":         self.health,
+            "money":          self.money,
+            "killcount":      self.killcount,
+            "current_weapon": self.currentweapon,
+            "monsters":       [
+                {"health": getattr(self, f"monsterhealth{i}", 0), "damage": getattr(self, f"monsterdamage{i}", 0)}
+                for i in range(1, 6)
+            ],
+        }
+
+        json_data = json.dumps(game_data)
+        encoded_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
+
+        try:
+            with open(file_path, "w") as f:
+                f.write(encoded_data)
+            self.tui.styled_print("\nGame saved successfully!", Fore.GREEN)
+        except Exception as e:
+            self.tui.styled_print(f"\nFailed to save the game. Error: {e}", Fore.RED)
+        finally:
+            root.destroy()
+            time.sleep(1)
             self.home()
 
-        with open(file_path, "w") as f:
-            f.write(f"{self.difficulty}\n{self.health}\n{self.money}\n{self.killcount}\n{self.monsterhealth}\n{self.monsterdamage}\n{self.monsterhealth2}\n{self.monsterdamage2}\n{self.monsterhealth3}\n{self.monsterdamage3}\n{self.monsterhealth4}\n{self.monsterdamage4}\n{self.monsterhealth5}\n{self.monsterdamage5}\n{self.currentweapon}")
-        root.destroy()
-        print("\nGame saved!")
-        sleep(1)
-        self.home()
-
     def load_game(self):
-        self.clear()
-        print("\nLoading game...")
+        self.tui.clear()
+        self.tui.decorative_header("Loading Game...", fore_color = Fore.CYAN)
 
         root = tkinter.Tk()
         root.withdraw()
         file_path = filedialog.askopenfilename(
-            title="Select save file",
-            filetypes=[("ShadowDoom Save files", "*.sdoom")],
+            title = "Select Save File",
+            filetypes = [("ShadowDoom Save Files", "*.sdoom")],
         )
 
-        if file_path == "":
-            print("\nNo file selected.")
-            sleep(1)
+        if not file_path:
+            self.tui.styled_print("\nNo file selected.", Fore.RED)
+            time.sleep(1)
             self.home()
 
-        with open(file_path, "r") as f:
-            self.difficulty = float(f.readline())
-            self.health = int(f.readline())
-            self.money = int(f.readline())
-            self.killcount = int(f.readline())
-            self.monsterhealth = int(f.readline())
-            self.monsterdamage = int(f.readline())
-            self.monsterhealth2 = int(f.readline())
-            self.monsterdamage2 = int(f.readline())
-            self.monsterhealth3 = int(f.readline())
-            self.monsterdamage3 = int(f.readline())
-            self.monsterhealth4 = int(f.readline())
-            self.monsterdamage4 = int(f.readline())
-            self.monsterhealth5 = int(f.readline())
-            self.monsterdamage5 = int(f.readline())
-            self.currentweapon = f.readline()
+            return
 
-        root.destroy()
-        print("\nGame loaded!")
-        sleep(1)
-        self.home()
+        try:
+            with open(file_path, "r") as f:
+                encoded_data = f.read()
+
+            json_data = base64.b64decode(encoded_data.encode('utf-8')).decode('utf-8')
+            game_data = json.loads(json_data)
+
+            self.difficulty = game_data["difficulty"]
+            self.health = game_data["health"]
+            self.money = game_data["money"]
+            self.killcount = game_data["killcount"]
+            self.currentweapon = game_data["current_weapon"]
+
+            for i, monster in enumerate(game_data["monsters"], start = 1):
+                setattr(self, f"monsterhealth{i}", monster["health"])
+                setattr(self, f"monsterdamage{i}", monster["damage"])
+
+            self.tui.styled_print("\nGame loaded successfully!", Fore.GREEN)
+        except Exception as e:
+            self.tui.styled_print(f"\nFailed to load the game. Error: {e}", Fore.RED)
+        finally:
+            root.destroy()
+            time.sleep(1)
+            self.home()
 
     def game_credits(self):
-        self.clear()
-        print("\n##############################")
-        print("########## Credits ###########")
-        print("##############################")
-        print("##                          ##")
-        print("##     Story: Siddharth     ##")
-        print("##  Programming: Siddharth  ##")
-        print("##   Playtesting: Krithik   ##")
-        print("## Written in: Python, Bash ##")
-        print(f"##      Version: {__version__}      ##")
-        print("##                          ##")
-        print("##    This Game was made    ##")
-        print("##     possible by you.     ##")
-        print("##                          ##")
-        print("##   Keep ShadowDooming!!   ##")
-        print("##                          ##")
-        print("##############################")
-        sleep(10)
+        width = 50
+
+        self.tui.clear()
+        self.tui.decorative_header("Credits", width = width, fore_color = Fore.CYAN)
+
+        credits_text = [
+            "Story: Siddharth",
+            "Programming: Siddharth",
+            "Playtesting: Krithik, Aditya",
+            "Written in: Python",
+            f"Version: {__version__}",
+            "This Game was made possible by you.",
+            "Keep ShadowDooming!!",
+        ]
+
+        border = "#" * width
+        padding = "##" + " " * (width - 4) + "##"
+
+        self.tui.styled_print(border, Fore.YELLOW)
+        self.tui.styled_print(padding, Fore.YELLOW)
+        for line in credits_text:
+            content = f"{line.center(width - 4)}"
+            self.tui.styled_print(f"##{content}##", Fore.YELLOW)
+
+        self.tui.styled_print(padding, Fore.YELLOW)
+        self.tui.styled_print(border, Fore.YELLOW)
+
+        input("\nPress Enter to continue...")
         self.menu()
 
-    def __init__(self):
-        colorama.init()
+    def __init__(self, _tui):
         pygame.mixer.init()
+        self.tui = _tui
 
-        self.journey_events = [self.prebattle, self.treasure]
-        self.journey_events_chances = [0.7, 0.2]
+        self.journey_events = [self.pre_battle, self.treasure]
+        self.journey_events_chances = [0.7, 0.3]
+
         self.main_menu_music = [1, 2, 3]
-
-        self.attack_phrases = [
-            "Slash!",
-            "Bang!",
-            "Pow!",
-            "Boom!",
-            "Splat!",
-            "Bish!",
-            "Bash!",
-            "Biff!",
-            "Ouch!",
-            "Ow!",
-            "Whoosh!",
-            "Arghh!",
-            "Paf!",
-            "Slice!",
-            "Wham!",
-            "Bam!",
-        ]
-
-        self.death_phrases = [
-            "You failed!",
-            "Game over!",
-            "OOF!!",
-            "Did you get that on Camera?",
-            "That was quick.",
-            "Well, you're dead. This place just doesn't seem very safe now, does it?",
-            "NOOOOO!!!!!!!",
-            "You were killed.",
-            "U NEED MORE PRACTICE!",
-            "You're dead.",
-        ]
-
-        self.monsters_list = [
-            "Ogre",
-            "Orc",
-            "Beast",
-            "Demon",
-            "Giant",
-            "Golem",
-            "Mummy",
-            "Zombie",
-            "Skeleton",
-            "Witch",
-            "Dragon",
-            "Drunkard",
-            "Ugly Fat Guy",
-        ]
-
-        self.treasure_list = [
-            "some Dust",
-            "nothing",
-            f"{random.randint(1, 200)} Gold",
-            "An old rusty sword",
-            "a Mystery Liquid",
-            "a healing potion",
-            "a Colt Anaconda"
-        ]
-
-        self.treasure_weights = [
-            0.25,
-            0.25,
-            0.2,
-            0.2,
-            0.05,
-            0.04,
-            0.01
-        ]
-
-        self.max_health = 100
-        self.health = 0
-        self.money = 0
-        self.playerdamage = 0
-        self.killcount = 0
-        self.difficulty = 0
-        self.currentweapon = ""
-        self.possession = False
-        self.monster = ""
-        self.is_inventory = False
-
-        self.stick = False
-        self.club = False
-        self.spiked_mace = False
-        self.fire_axe = False
-        self.spear = False
-        self.double_axe = False
-        self.katana = False
-        self.shotgun = False
-        self.magic_scythe = False
-        self.rusty_sword = False
-        self.colt_anaconda = False
-
-        self.monsterhealth = 0
-        self.monsterhealth2 = 0
-        self.monsterhealth3 = 0
-        self.monsterhealth4 = 0
-        self.monsterhealth5 = 0
-
-        self.monsterdamage = 0
-        self.monsterdamage2 = 0
-        self.monsterdamage3 = 0
-        self.monsterdamage4 = 0
-        self.monsterdamage5 = 0
+        self.attack_phrases = ["Slash!", "Bang!", "Pow!", "Boom!", "Splat!", "Bish!", "Bash!", "Biff!", "Ouch!", "Ow!",
+                               "Whoosh!", "Arghh!", "Paf!", "Slice!", "Wham!", "Bam!"]
+        self.death_phrases = ["You failed!", "Game over!", "OOF!!", "Did you get that on camera?", "That was quick.",
+                              "Well, you're dead. This place just doesn't seem very safe now, does it?",
+                              "NOOOOO!!!!!!!", "You were killed.", "U NEED MORE PRACTICE!", "You're dead."]
+        self.monsters_list = ["Ogre", "Orc", "Beast", "Demon", "Giant", "Golem", "Mummy", "Zombie", "Skeleton", "Witch",
+                              "Dragon", "Pirate", "Vampire"]
+        self.treasure_list = ["some Dust", "nothing", f"{random.randint(1, 200)} Gold", "An old rusty sword",
+                              "a Mystery Liquid", "a healing potion", "a Colt Anaconda"]
+        self.treasure_weights = [0.25, 0.2, 0.2, 0.2, 0.05, 0.05, 0.05]
+        self.reset_player_state()
 
         if not pygame.mixer.music.get_busy():
-            self.play_music(
-                f"{os.path.dirname(__file__)}/audio/menu/mainmenu{random.choice(self.main_menu_music)}.wav")
+            self.play_music(f"menu/{random.choice(self.main_menu_music)}")
 
-        print(f"\n{Fore.CYAN}{Back.MAGENTA}\n")
-        sleep(1)
-        self.clear()
+        self.tui.clear()
+        art_lines = [
+            "       .:+sss+:`    `-/ossss/`    `:+++o/.               `-:+oss:    .:+osssssso/-.          ````:+sso:`  `-+sso:`  .:oss+-   `:+ss+.",
+            "     `ohy+//shh+` `/yy///ydd/`  `:ydo``/o:`            -+o+:odmh: `-sy+//sdmy++shdh+.      .+o/:sy++hmd+``///odmh+ .+//smmy- `:+/omds`",
+            "    `+mmo`  `--`  :dd/  :hmy-   :hmd-   `             /ho.`.smmo` .yds` .ymd/` `-ommy.   `/hy/`-s+``+mmd. `  -smmy` `  /dmm/`   `/md+.",
+            "     +mmdo-`      `/-` `ymmo.``.omms`               `/d+`  /hmh/  `    .odms-    -ymm/  `odd+`  `` `+mmd.    .ommy.   `smmm/`  `:yh+`",
+            "    `.+hdmds:`         :dmmhyyyhdmd:          ```  `/dd+///ymms.       .hmm/`    .smm/  :dmy-      `smmo`    `ommy.  .symmm/` `/yy:",
+            "  ./++o+/sdmdo.       `smms:---ommy`       `:/+o+.`:ddsssshmmh/        +dmy-     -ymh-  odms.     `/mmy.     `ommy``:y+:dmm/`.oy+.",
+            " .sd: `` `+dms-       -dmd:`  -ymd+       .sh+````:hd:   `smms.       .hmh:`    .odh:   odmy-    `/hmy.      `omms-os- .dmd//so-",
+            " .ymy:..-/ydy:` `-/-  omd/`   /dmd+-:/    -ymy/.-+hy:    .ymms-:/.   .smh/-..-:oyy+.    -ymms:.-/sdy/`       .smmds/`  .dmmho:`",
+            "  ./shhhys+-`   `:oso+s/.     .+yhyo:`     -oyhhyo:`      :shhs+-  .oyhhhhhhhys+-`       `:oyhhys/-          .oyo:.    -ys+-`",
+            "\n                     `.:+osssssso/-.          `` .:oss+-`        `` -/oss/.      `./osso:`        `-/o++o+-`",
+            "                     :sy+//sdmy++ohdh+.     `-+o:-yy/+dmd/`    `:oo./do/sdmy:     -o//ommds-     .+ydmy.`:+/.",
+            "                     hdo` -smd/  `.ommy.   .+hy:`:y/ `ymms.   -ohs.`+s- -hmm+`     ` `sddmm+`  `/sydmm:",
+            "                     /:. `odmy-    .hmm:` .odh/   `   smms.  -ymy-  ``  -hmm+`       :ds+hmy- .+y+/mmy`",
+            "                         -ymd+`    `smm/` +dms-      .hmm/` .omdo`      /dmh:        sd:.smd/-os:.smm/",
+            "                         +dmy-     .hmh- `smmo.      +mms.  :ymd+      .ymd+`       .dy. +dmyys-`:dmd.",
+            "                        -ymh/`    .omh:  `smms.    `/mdo.   -ymdo     .sdh/`        +m/` -hmdo. .omms",
+            "                       .sdh/-..-:oyh+.    :ymdo-.-/ydy:`    `/dmh+-.-ohho.    .:/` .hy`  `os/`  -hmmo.:/`",
+            f"                     .oyhhhhhhhys+-`       ./shhhyo/.         .+shhhy+:`      .+ss++/`          `/yhhs/.",
+            f"\n                                                 Version: {__version__}                                                 \n\n",
+        ]
+        for line in art_lines:
+            self.tui.styled_print(line, Fore.CYAN)
 
-        print("\n       .:+sss+:`    `-/ossss/`    `:+++o/.               `-:+oss:    .:+osssssso/-.          ````:+sso:`  `-+sso:`  .:oss+-   `:+ss+.  	")
-        print("     `ohy+//shh+` `/yy///ydd/`  `:ydo``/o:`            -+o+:odmh: `-sy+//sdmy++shdh+.      .+o/:sy++hmd+``///odmh+ .+//smmy- `:+/omds`	    ")
-        print("    `+mmo`  `--`  :dd/  :hmy-   :hmd-   `             /ho.`.smmo` .yds` .ymd/` `-ommy.   `/hy/`-s+``+mmd. `  -smmy` `  /dmm/`   `/md+.	    ")
-        print("     +mmdo-`      `/-` `ymmo.``.omms`               `/d+`  /hmh/  `    .odms-    -ymm/  `odd+`  `` `+mmd.    .ommy.   `smmm/`  `:yh+` 	    ")
-        print("    `.+hdmds:`         :dmmhyyyhdmd:          ```  `/dd+///ymms.       .hmm/`    .smm/  :dmy-      `smmo`    `ommy.  .symmm/` `/yy:   	    ")
-        print("  ./++o+/sdmdo.       `smms:---ommy`       `:/+o+.`:ddsssshmmh/        +dmy-     -ymh-  odms.     `/mmy.     `ommy``:y+:dmm/`.oy+.    	    ")
-        print(" .sd: `` `+dms-       -dmd:`  -ymd+       .sh+````:hd:   `smms.       .hmh:`    .odh:   odmy-    `/hmy.      `omms-os- .dmd//so-      	    ")
-        print(" .ymy:..-/ydy:` `-/-  omd/`   /dmd+-:/    -ymy/.-+hy:    .ymms-:/.   .smh/-..-:oyy+.    -ymms:.-/sdy/`       .smmds/`  .dmmho:`       	    ")
-        print("  ./shhhys+-`   `:oso+s/.     .+yhyo:`     -oyhhyo:`      :shhs+-  .oyhhhhhhhys+-`       `:oyhhys/-          .oyo:.    -ys+-`         	    ")
-        sleep(0.5)
-        print("\n                     `.:+osssssso/-.          `` .:oss+-`        `` -/oss/.      `./osso:`        `-/o++o+-` 								")
-        print("                     :sy+//sdmy++ohdh+.     `-+o:-yy/+dmd/`    `:oo./do/sdmy:     -o//ommds-     .+ydmy.`:+/. 							    ")
-        print("                     hdo` -smd/  `.ommy.   .+hy:`:y/ `ymms.   -ohs.`+s- -hmm+`     ` `sddmm+`  `/sydmm: 									    ")
-        print("                     /:. `odmy-    .hmm:` .odh/   `   smms.  -ymy-  ``  -hmm+`       :ds+hmy- .+y+/mmy`									    ")
-        print("                         -ymd+`    `smm/` +dms-      .hmm/` .omdo`      /dmh:        sd:.smd/-os:.smm/ 									    ")
-        print("                         +dmy-     .hmh- `smmo.      +mms.  :ymd+      .ymd+`       .dy. +dmyys-`:dmd.   									")
-        print("                        -ymh/`    .omh:  `smms.    `/mdo.   -ymdo     .sdh/`        +m/` -hmdo. .omms    									")
-        print("                       .sdh/-..-:oyh+.    :ymdo-.-/ydy:`    `/dmh+-.-ohho.    .:/` .hy`  `os/`  -hmmo.:/`									")
-        print(
-            f"                     .oyhhhhhhhys+-`       ./shhhyo/.         .+shhhy+:`      .+ss++/`          `/yhhs/.     Version {__version__} 		\n\n")
-
-        input("Press enter to start... ")
-        print(f"{Fore.LIGHTBLUE_EX}{Back.RESET}")
+        input("Press Enter to start... ")
         self.menu()
 
 
 if __name__ == "__main__":
+    tui = TUI()
+
     if sys.version_info < (3, 6):
-        print(f"{Fore.RED}ShadowDoom requires {Fore.RESET}{Fore.BLUE}Python 3.6{Fore.RESET}{Fore.RED} or higher. Please update your Python version.{Fore.RESET}")
-        print(f"{Fore.RED}Exiting...{Fore.RESET}")
+        tui.styled_print(
+            "ShadowDoom requires Python 3.6 or higher. Please update your Python version.",
+            Fore.RED
+        )
+        tui.styled_print("Exiting...", Fore.RED)
         sys.exit(1)
 
     try:
-        Game()
+        Game(tui)
     except KeyboardInterrupt:
-        print(f"{Fore.RESET}{Back.RESET}")
-        print(f"{Fore.RED}Interrupted by Keyboard!")
-        print(f"{Fore.RED}Exiting...")
-        Game.play_music(
-            f'{os.path.dirname(__file__)}/audio/bye.wav', True, False)
+        tui.clear()
+        tui.section_title("Game Interrupted!", fore_color = Fore.RED)
+        tui.styled_print("Interrupted by Keyboard!", Fore.YELLOW)
+        tui.styled_print("Exiting...", Fore.RED)
+
         try:
-            sleep(5)
+            Game.play_music("bye", loop = False, stop_previous = True)
+            time.sleep(5)
         except KeyboardInterrupt:
-            print("Okay, I'm exiting!! Jeez!")
-        print(f"{Fore.RESET}{Back.RESET}")
+            tui.styled_print("Okay, I'm exiting!! Jeez!", Fore.RED)
+
+        print(f"{Fore.RESET}{Back.RESET}\n")
         sys.exit()
