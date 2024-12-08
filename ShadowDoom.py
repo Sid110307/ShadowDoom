@@ -50,7 +50,7 @@ class TUI:
         self.styled_print(border, fore_color)
 
     def section_title(self, text, width=60, fore_color=Fore.GREEN):
-        self.styled_print(f" {text.center(width)} ", fore_color, style = Style.BRIGHT)
+        self.styled_print(f"\n {text.center(width)} ", fore_color, style = Style.BRIGHT)
         self.styled_print("-" * width, fore_color)
 
     def render_menu(self, options, width=60, fore_color=Fore.YELLOW, border_char="|"):
@@ -64,8 +64,49 @@ class TUI:
         for key, value in items.items():
             key_text = f"{key}: {value}".ljust(width - 4)
             self.styled_print(f"{border_char} {key_text} {border_char}", fore_color)
-
         self.styled_print("+" + "-" * (width - 2) + "+", fore_color)
+
+    def list_display(self, items, center=False, width=60, fore_color=Fore.YELLOW, border_char="|"):
+        for item in items:
+            item_text = " | ".join([f"{key}: {value}" for key, value in item.items()]).strip()
+            item_text = item_text.center(width - 4) if center else item_text.ljust(width - 4)
+
+            self.styled_print(f"{border_char} {item_text} {border_char}", fore_color)
+        self.styled_print("+" + "-" * (width - 2) + "+", fore_color)
+
+    def table_display(self, items, width=60, fore_color=Fore.YELLOW, border_char="|"):
+        headers = [header for header in items[0] if isinstance(items[0], dict)]
+        column_widths = {
+            header: max(len(str(header)), *(len(str(row[header])) for row in items if isinstance(row, dict)))
+            for header in headers
+        }
+
+        total_table_width = sum(column_widths.values()) + len(headers) * 3 + 1
+
+        if total_table_width > width:
+            available_width = width - (len(headers) * 3 + 1)
+            scaling_factor = available_width / sum(column_widths.values())
+            column_widths = {header: max(5, int(width * scaling_factor)) for header, width in column_widths.items()}
+        else:
+            remaining_space = width - total_table_width
+            for header in headers:
+                column_widths[header] += remaining_space // len(headers)
+
+        def format_row(row):
+            return f"{border_char} " + " | ".join(
+                f"{str(row[header])[:column_widths[header]].ljust(column_widths[header])}" for header in headers
+            ) + f" {border_char}"
+
+        header_line = format_row({header: header for header in headers})
+        border_line = "+" + "+".join("-" * (column_widths[header] + 2) for header in headers) + "+"
+
+        self.styled_print(border_line, fore_color)
+        self.styled_print(header_line, fore_color)
+        self.styled_print(border_line, fore_color)
+
+        for item in items:
+            self.styled_print(border_line if item == "DIVIDER" else format_row(item), fore_color)
+        self.styled_print(border_line, fore_color)
 
     @staticmethod
     def clear():
@@ -159,6 +200,7 @@ class Game:
         self.killcount = 0
         self.currentweapon = "Bare Hands"
         self.possession = False
+        self.difficulty = 1
 
         self.stick = False
         self.club = False
@@ -312,92 +354,95 @@ class Game:
         self.money = max(self.money, 0)
         self.tui.clear()
 
-        self.tui.decorative_header("Welcome to the Shop!", width = 80)
-        stats = {
-            "Your Money": f"${self.money}",
-            "Health":     f"{self.health} HP / {self.max_health} HP"
-        }
-        self.tui.key_value_display(stats, width = 80)
+        self.tui.decorative_header("Welcome to the Shop!", width = 100)
+        stats = [{
+            "Your Money":     f"${self.money}",
+            "Health":         f"{self.health} HP / {self.max_health} HP",
+            "Current Weapon": self.currentweapon,
+            "Weapon Damage":  self.playerdamage
+        }]
+        self.tui.list_display(stats, center = True, width = 100)
 
-        if self.money == 0:
-            self.tui.styled_print("You have no money to spend. Go kill Monsters and earn more!", Fore.RED)
-            time.sleep(3)
-            self.home()
-
-            return
+        # if self.money == 0:
+        #     self.tui.styled_print("You have no money to spend. Go kill Monsters and earn more!", Fore.RED)
+        #     time.sleep(3)
+        #     self.home()
+        #
+        #     return
 
         items = {
-            1:  {
+            1:         {
                 "name":        "Stick",
                 "price":       5,
                 "effect":      "+10 Damage",
-                "description": "Naturally crafted from an Oak Tree.",
+                "description": "Hand-crafted from an oak tree.",
                 "attr":        "stick"
             },
-            2:  {
+            2:         {
                 "name":        "Old Club",
                 "price":       10,
                 "effect":      "+13 Damage",
-                "description": "This ol' bird still has a lot of strength in it.",
+                "description": "This ol' bird still packs a punch.",
                 "attr":        "club"
             },
-            3:  {
+            3:         {
                 "name":        "Spiked Mace",
                 "price":       20,
                 "effect":      "+15 Damage",
-                "description": "Ouch!! It hurts too much!",
+                "description": "Crush bones with ease.",
                 "attr":        "spiked_mace"
             },
-            4:  {
+            4:         {
                 "name":        "Fire Axe",
                 "price":       35,
                 "effect":      "+20 Damage",
-                "description": "Hit it to ring an alarm inside your enemy.",
+                "description": "Ring an alarm inside your enemy.",
                 "attr":        "fire_axe"
             },
-            5:  {
+            5:         {
                 "name":        "Spear",
                 "price":       50,
                 "effect":      "+35 Damage",
-                "description": "Pierce or Stab. The choice is yours.",
+                "description": "Pierce or stab. The choice is yours.",
                 "attr":        "spear"
             },
-            6:  {
+            6:         {
                 "name":        "Double Axe",
                 "price":       60,
                 "effect":      "+40 Damage",
                 "description": "Enough to kill two people at once.",
                 "attr":        "double_axe"
             },
-            7:  {
+            7:         {
                 "name":        "Katana",
                 "price":       100,
                 "effect":      "+50 Damage",
                 "description": "Slice them in half!",
                 "attr":        "katana"
             },
-            8:  {
+            8:         {
                 "name":        "Shotgun",
                 "price":       200,
                 "effect":      "+70 Damage",
-                "description": "Boom!",
+                "description": "Boom! Headshot!!",
                 "attr":        "shotgun"
             },
-            9:  {
+            9:         {
                 "name":        "Magic Scythe",
                 "price":       250,
                 "effect":      "+90 Damage",
                 "description": "You will have power beyond that of a God!",
                 "attr":        "magic_scythe"
             },
-            10: {
+            "DIVIDER": {},
+            10:        {
                 "name":        "Healing Pill",
                 "price":       5,
                 "effect":      "+10 HP",
                 "description": "A small boost to your health.",
                 "attr":        "health_pill"
             },
-            11: {
+            11:        {
                 "name":        "Health Potion",
                 "price":       20,
                 "effect":      "+50 HP",
@@ -406,13 +451,25 @@ class Game:
             }
         }
 
-        self.tui.section_title("Items for Sale", width = 80)
-        for key, item in items.items():
-            self.tui.styled_print(f"{key}: {item['name']} - {item['effect']} [{item['price']}$]", Fore.YELLOW)
-            self.tui.styled_print(f"   {item['description']}", Fore.WHITE)
+        self.tui.section_title("Items for Sale", width = 100)
 
-        self.tui.styled_print("Type the item number to buy, or 'quit' to go back home.", Fore.CYAN)
-        choice = input("\nCHOOSE>> ").strip()
+        display_items = []
+        for i, item in items.items():
+            if item == {}:
+                display_items.append("DIVIDER")
+                continue
+
+            display_items.append({
+                "ID":          i,
+                "Name":        item["name"],
+                "Description": item["description"],
+                "Price":       f"${item['price']}",
+                "Effect":      item["effect"]
+            })
+
+        self.tui.table_display(display_items, width = 100)
+        self.tui.styled_print("\nType the item number to buy, or 'quit' to go back home.", Fore.CYAN)
+        choice = input("CHOOSE>> ").strip()
 
         if choice.lower() == "quit":
             self.tui.styled_print("Going back home...", Fore.GREEN)
@@ -529,7 +586,7 @@ class Game:
                 break
 
         if self.killcount > 100:
-            self.difficulty += 0.1
+            self.difficulty += 1
             base_health = [h + (i * 2) for i, h in enumerate(base_health)]
             base_damage = [d + (i + 1) for i, d in enumerate(base_damage)]
 
@@ -540,11 +597,10 @@ class Game:
         article = "an" if self.monster[0].lower() in "aeiou" else "a"
         self.tui.styled_print(f"You encounter {article} {self.monster}!", Fore.YELLOW, style = Style.BRIGHT)
 
-        monster_index = self.monsters_list.index(self.monster)
-        setattr(self, f"monsterhealth{monster_index}", base_health[monster_index])
-        setattr(self, f"monsterdamage{monster_index}", base_damage[monster_index])
+        setattr(self, f"monsterhealth{self.difficulty}", base_health[self.difficulty])
+        setattr(self, f"monsterdamage{self.difficulty}", base_damage[self.difficulty])
 
-        self.encounter(monster_index)
+        self.encounter()
 
     def treasure(self):
         self.tui.clear()
@@ -623,58 +679,65 @@ class Game:
         self.home()
 
     def mystery_liquid1(self):
-        print("You feel very strong.")
+        self.tui.styled_print("You feel very strong.", Fore.GREEN)
         time.sleep(2)
         self.health += 50
         self.health = min(self.health, self.max_health)
 
-        print(f"You now have {self.health} health.")
+        self.tui.styled_print(f"You now have {self.health} health.", Fore.GREEN)
         time.sleep(1)
 
     def mystery_liquid2(self):
-        print("You feel a bit dizzy.")
+        self.tui.styled_print("You feel a bit dizzy.", Fore.GREEN)
         time.sleep(2)
         self.health -= 10
         if self.health <= 0:
             self.health = 5
 
-        print(f"You now have {self.health} health.")
+        self.tui.styled_print(f"You now have {self.health} health.", Fore.GREEN)
         time.sleep(1)
 
     def mystery_liquid3(self):
         self.money = max(self.money, 0)
-        print("You suddenly vomit some paper.")
+        self.tui.styled_print("You suddenly vomit some paper.", Fore.GREEN)
         time.sleep(2)
-        print("Nope, it's cash!")
+        self.tui.styled_print("Nope, it's cash!", Fore.GREEN)
         self.money += 100
 
-        print(f"You now have {self.money} money.")
+        self.tui.styled_print(f"You now have {self.money} money.", Fore.GREEN)
         time.sleep(1)
 
     def mystery_liquid4(self):
-        print("You feel nothing.")
+        self.tui.styled_print("You feel nothing.", Fore.GREEN)
         time.sleep(1)
-        print("You now feel a bit stronger, but nothing else.")
+        self.tui.styled_print("You now feel a bit stronger, but nothing else.", Fore.GREEN)
         self.playerdamage += 10
-        print("You go back to your village.")
+        self.tui.styled_print("You go back to your village.", Fore.GREEN)
 
         time.sleep(2)
         self.home()
 
-    def encounter(self, monster_index):
-        monster_health = getattr(self, f"monsterhealth{monster_index}")
-        monster_damage = getattr(self, f"monsterdamage{monster_index}")
+    def encounter(self, attacked=False):
+        monster_health = getattr(self, f"monsterhealth{self.difficulty}")
+        monster_damage = getattr(self, f"monsterdamage{self.difficulty}")
 
         self.tui.clear()
-        self.tui.decorative_header("Encounter!", fore_color = Fore.RED)
-        stats = {
-            "You (HP)":             f"{self.health} HP",
-            "Money":                f"${self.money}",
-            "Your Damage":          f"{self.playerdamage}",
-            f"{self.monster} (HP)": f"{monster_health} HP",
-            "Enemy Damage":         f"{monster_damage}",
-        }
-        self.tui.key_value_display(stats)
+        if attacked:
+            self.tui.styled_print(f"\n\n{random.choice(self.attack_phrases)}", Fore.CYAN)
+
+        self.tui.decorative_header("Fight!", fore_color = Fore.RED)
+        stats = [
+            {
+                "You (HP)":    f"{self.health} HP",
+                "Money":       f"${self.money}",
+                "Your Damage": f"{self.playerdamage}",
+            },
+            {
+                f"{self.monster} (HP)": f"{monster_health} HP",
+                "Enemy Damage":         f"{monster_damage}",
+            }
+        ]
+        self.tui.list_display(stats)
 
         self.tui.section_title("What would you like to do?")
         options = ["Attack", "Retreat back to your village"]
@@ -683,7 +746,7 @@ class Game:
         c = input("\nCHOOSE>> ")
         if c == "1":
             self.tui.clear()
-            self.attack(monster_index)
+            self.attack()
         elif c == "2":
             self.tui.styled_print("\nYou retreat back to your village.", Fore.YELLOW)
             time.sleep(1)
@@ -691,11 +754,11 @@ class Game:
         else:
             self.tui.styled_print("Please enter a valid option.", Fore.RED)
             time.sleep(2)
-            self.encounter(monster_index)
+            self.encounter()
 
-    def attack(self, monster_index):
-        monster_health_attr = f"monsterhealth{monster_index}"
-        monster_damage_attr = f"monsterdamage{monster_index}"
+    def attack(self):
+        monster_health_attr = f"monsterhealth{self.difficulty}"
+        monster_damage_attr = f"monsterdamage{self.difficulty}"
 
         monster_health = getattr(self, monster_health_attr)
         monster_damage = getattr(self, monster_damage_attr)
@@ -721,9 +784,8 @@ class Game:
         elif self.health <= 0:
             self.die()
         else:
-            self.tui.styled_print(f"\n\n{random.choice(self.attack_phrases)}", Fore.CYAN)
             setattr(self, monster_health_attr, monster_health)
-            self.encounter(monster_index)
+            self.encounter(True)
 
     def continue_journey(self):
         self.tui.clear()
@@ -930,7 +992,6 @@ if __name__ == "__main__":
     try:
         Game(tui)
     except KeyboardInterrupt:
-        tui.clear()
         tui.section_title("Game Interrupted!", fore_color = Fore.RED)
         tui.styled_print("Interrupted by Keyboard!", Fore.YELLOW)
         tui.styled_print("Exiting...", Fore.RED)
