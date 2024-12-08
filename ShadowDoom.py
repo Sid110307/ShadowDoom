@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 import base64
 import json
@@ -36,7 +36,7 @@ class Game:
         self.audio_manager = _audio_manager
 
         self.journey_events = [self.pre_battle, self.treasure]
-        self.journey_events_chances = [0.7, 0.3]
+        self.journey_events_chances = [0.75, 0.25]
 
         self.main_menu_music = [1, 2, 3]
         self.attack_phrases = ["Slash!", "Bang!", "Pow!", "Boom!", "Splat!", "Bish!", "Bash!", "Biff!", "Ouch!", "Ow!",
@@ -74,7 +74,7 @@ class Game:
                 "                         +dmy-     .hmh- `smmo.      +mms.  :ymd+      .ymd+`       .dy. +dmyys-`:dmd.",
                 "                        -ymh/`    .omh:  `smms.    `/mdo.   -ymdo     .sdh/`        +m/` -hmdo. .omms",
                 "                       .sdh/-..-:oyh+.    :ymdo-.-/ydy:`    `/dmh+-.-ohho.    .:/` .hy`  `os/`  -hmmo.:/`",
-                f"                     .oyhhhhhhhys+-`       ./shhhyo/.         .+shhhy+:`      .+ss++/`          `/yhhs/.",
+                "                     .oyhhhhhhhys+-`       ./shhhyo/.         .+shhhy+:`      .+ss++/`          `/yhhs/.",
                 f"\n                                                 Version: {__version__}                                                 \n\n",
             ]
             for line in art_lines:
@@ -157,16 +157,19 @@ class Game:
         self.currentweapon = "Bare Hands"
         self.possession = False
         self.difficulty = 1
+        self.boss = False
 
         self.stick = False
         self.club = False
         self.spiked_mace = False
         self.fire_axe = False
+        self.poison_dagger = False
         self.spear = False
         self.double_axe = False
         self.katana = False
         self.shotgun = False
         self.magic_scythe = False
+        self.flamethrower = False
         self.rusty_sword = False
         self.colt_anaconda = False
 
@@ -219,7 +222,7 @@ class Game:
             self.save_game()
         elif c == "5":
             self.load_game()
-        elif c == options[5]:
+        elif c == "6":
             c = self.input("Are you sure you want to exit? Any unsaved progress will be lost. (y/n) ").lower()
             while c not in ["y", "n"]:
                 self.tui.decorative_header("Invalid Choice!", fore_color = "red")
@@ -247,11 +250,13 @@ class Game:
             "Old Club":      (self.club, 10),
             "Spiked Mace":   (self.spiked_mace, 15),
             "Fire Axe":      (self.fire_axe, 20),
+            "Poison Dagger": (self.poison_dagger, 25),
             "Spear":         (self.spear, 35),
             "Double Axe":    (self.double_axe, 40),
             "Katana":        (self.katana, 50),
             "Shotgun":       (self.shotgun, 70),
             "Magic Scythe":  (self.magic_scythe, 90),
+            "Flamethrower":  (self.flamethrower, 80),
             "Rusty Sword":   (self.rusty_sword, 15),
             "Colt Anaconda": (self.colt_anaconda, 100),
         }
@@ -277,13 +282,15 @@ class Game:
             2:  "Old Club",
             3:  "Spiked Mace",
             4:  "Fire Axe",
-            5:  "Spear",
-            6:  "Double Axe",
-            7:  "Katana",
-            8:  "Shotgun",
-            9:  "Magic Scythe",
-            10: "Rusty Sword",
-            11: "Colt Anaconda"
+            5:  "Poison Dagger",
+            6:  "Spear",
+            7:  "Double Axe",
+            8:  "Katana",
+            9:  "Shotgun",
+            10:  "Magic Scythe",
+            11: "Flamethrower",
+            12: "Rusty Sword",
+            13: "Colt Anaconda"
         }
 
         for key, weapon in equip_keys.items():
@@ -296,9 +303,7 @@ class Game:
             self.currentweapon = selected_weapon
             self.playerdamage = weapons[selected_weapon][1]
 
-            setattr(self, selected_weapon.lower().replace(" ", "_"), False)
             self.tui.styled_print(f"\nYou have equipped the {selected_weapon}!", fore_color = "green")
-
             time.sleep(1)
             self.inventory()
         elif c == "0":
@@ -314,21 +319,15 @@ class Game:
         self.money = max(self.money, 0)
         self.tui.clear()
 
-        self.tui.decorative_header("Welcome to the Shop!", width = 100)
+        self.tui.decorative_header("Welcome to the Shop!", width = 120)
         stats = [{
             "Your Money":     f"${self.money}",
             "Health":         f"{self.health} HP / {self.max_health} HP",
             "Current Weapon": self.currentweapon,
             "Weapon Damage":  self.playerdamage
         }]
-        self.tui.list_display(stats, center = True, width = 100)
-
-        if self.money == 0:
-            self.tui.styled_print("You have no money to spend. Go kill Monsters and earn more!", "red")
-            time.sleep(3)
-            self.home()
-
-            return
+        self.tui.list_display(stats, center = True, width = 120)
+        self.tui.decorative_header("Tip: Keep your health high and kill monsters to earn more money.", fore_color = "cyan", width = 120)
 
         items = {
             1:         {
@@ -360,49 +359,63 @@ class Game:
                 "attr":        "fire_axe"
             },
             5:         {
+                "name":        "Poison Dagger",
+                "price":       40,
+                "effect":      "+25 Damage (+3 Damage over 3 turns)",
+                "description": "Small but deadly. Weakens your enemy over time.",
+                "attr":        "poison_dagger"
+            },
+            6:         {
                 "name":        "Spear",
                 "price":       50,
                 "effect":      "+35 Damage",
                 "description": "Pierce or stab. The choice is yours.",
                 "attr":        "spear"
             },
-            6:         {
+            7:         {
                 "name":        "Double Axe",
                 "price":       60,
                 "effect":      "+40 Damage",
                 "description": "Enough to kill two people at once.",
                 "attr":        "double_axe"
             },
-            7:         {
+            8:         {
                 "name":        "Katana",
                 "price":       100,
                 "effect":      "+50 Damage",
                 "description": "Slice them in half!",
                 "attr":        "katana"
             },
-            8:         {
+            9:         {
                 "name":        "Shotgun",
                 "price":       200,
                 "effect":      "+70 Damage",
                 "description": "Boom! Headshot!!",
                 "attr":        "shotgun"
             },
-            9:         {
+            10:         {
                 "name":        "Magic Scythe",
                 "price":       250,
                 "effect":      "+90 Damage",
                 "description": "You will have power beyond that of a God!",
                 "attr":        "magic_scythe"
             },
+            11:        {
+                "name":        "Flamethrower",
+                "price":       300,
+                "effect":      "+80 Damage (+5 Damage over 3 turns)",
+                "description": "Set your enemies ablaze! Watch them burn!",
+                "attr":        "flamethrower"
+            },
             "DIVIDER": {},
-            10:        {
+            12:        {
                 "name":        "Healing Pill",
                 "price":       5,
                 "effect":      "+10 HP",
                 "description": "A small boost to your health.",
                 "attr":        "health_pill"
             },
-            11:        {
+            13:        {
                 "name":        "Health Potion",
                 "price":       20,
                 "effect":      "+50 HP",
@@ -411,11 +424,11 @@ class Game:
             }
         }
 
-        self.tui.section_title("Items for Sale", width = 100)
+        self.tui.section_title("Items for Sale", width = 120)
 
         display_items = []
         for i, item in items.items():
-            if item == {}:
+            if not item:
                 display_items.append("DIVIDER")
                 continue
 
@@ -427,7 +440,7 @@ class Game:
                 "Effect":      item["effect"]
             })
 
-        self.tui.table_display(display_items, width = 100)
+        self.tui.table_display(display_items, width = 120)
         self.tui.styled_print("\nType the item number to buy, or 'quit' to go back home.", fore_color = "cyan")
         choice = self.input("CHOOSE>> ")
 
@@ -440,7 +453,7 @@ class Game:
             return
 
         if not choice.isdigit() or int(choice) not in items:
-            self.tui.decorative_header("Invalid Choice!", fore_color = "red")
+            self.tui.decorative_header("Invalid Choice!", fore_color = "red", width = 120)
             time.sleep(2)
             self.shop()
             return
@@ -503,6 +516,11 @@ class Game:
 
     def pre_battle(self):
         self.tui.clear()
+
+        if not self.boss and self.killcount > 100 and random.random() < 0.5 and self.difficulty > 10:
+            self.boss_battle()
+            return
+
         self.audio_manager.play_audio("attack", loop = True, stop_previous = False)
         self.tui.decorative_header("Get Ready to Fight!", fore_color = "red")
         time.sleep(2)
@@ -539,8 +557,8 @@ class Game:
             base_health = [h + (i * 2) for i, h in enumerate(base_health)]
             base_damage = [d + (i + 1) for i, d in enumerate(base_damage)]
 
-        base_health = [int(h / 1.5) for h in base_health]
-        base_damage = [int(d / 1.5) for d in base_damage]
+        base_health = [int(h / 1.5) + random.randint(-10, 10) for h in base_health]
+        base_damage = [int(d / 1.5) + random.randint(-3, 3) for d in base_damage]
 
         self.monster = random.choice(self.monsters_list)
         article = "an" if self.monster[0].lower() in "aeiou" else "a"
@@ -553,7 +571,7 @@ class Game:
 
     def treasure(self):
         self.tui.clear()
-        self.audio_manager.play_audio("treasure")
+        self.audio_manager.play_audio("treasure", loop = False, stop_previous = False)
         self.tui.decorative_header("You found a treasure chest!")
         self.tui.styled_print(
             """
@@ -595,6 +613,7 @@ class Game:
             self.tui.styled_print("You equip the sword.", fore_color = "cyan")
             self.rusty_sword = True
             self.currentweapon = "Rusty Sword"
+            self.playerdamage = 15
         elif treasure in {"nothing", "some Dust"}:
             self.tui.styled_print("Damn, just your luck.", fore_color = "red")
         elif treasure == "a Mystery Liquid":
@@ -621,6 +640,7 @@ class Game:
             self.tui.styled_print("You equip the Colt Anaconda.", fore_color = "cyan")
             self.colt_anaconda = True
             self.currentweapon = "Colt Anaconda"
+            self.playerdamage = 100
 
         self.audio_manager.stop_audio()
         time.sleep(2)
@@ -665,9 +685,9 @@ class Game:
         time.sleep(2)
         self.home()
 
-    def encounter(self, attacked=False):
-        monster_health = getattr(self, f"monsterhealth{self.difficulty}")
-        monster_damage = getattr(self, f"monsterdamage{self.difficulty}")
+    def encounter(self, attacked=False, turns=0, custom_health=None, custom_damage=None):
+        monster_health = custom_health if custom_health is not None else getattr(self, f"monsterhealth{self.difficulty}")
+        monster_damage = custom_damage if custom_damage is not None else getattr(self, f"monsterdamage{self.difficulty}")
 
         self.tui.clear()
         if attacked:
@@ -694,7 +714,7 @@ class Game:
         c = self.input("CHOOSE>> ")
         if c == "1":
             self.tui.clear()
-            self.attack()
+            self.attack(turns, custom_health, custom_damage)
         elif c == "2":
             self.tui.styled_print("You retreat back to your village.", fore_color = "yellow")
             time.sleep(1)
@@ -704,16 +724,21 @@ class Game:
             time.sleep(1)
             self.encounter()
 
-    def attack(self):
+    def attack(self, turns=0, custom_health=None, custom_damage=None):
         monster_health_attr = f"monsterhealth{self.difficulty}"
         monster_damage_attr = f"monsterdamage{self.difficulty}"
 
-        monster_health = getattr(self, monster_health_attr)
-        monster_damage = getattr(self, monster_damage_attr)
+        monster_health = custom_health if custom_health is not None else getattr(self, monster_health_attr)
+        monster_damage = custom_damage if custom_damage is not None else getattr(self, monster_damage_attr)
 
         self.audio_manager.play_audio(f"attack/{random.choice([1, 2, 3, 4, 5, 6])}", False, False)
         self.health -= monster_damage
         monster_health -= self.playerdamage
+
+        if self.currentweapon == "Poison Dagger" and turns < 3:
+            monster_health -= 3
+        if self.currentweapon == "Flamethrower" and turns < 3:
+            monster_health -= 5
 
         if monster_health <= 0:
             setattr(self, monster_health_attr, 0)
@@ -723,17 +748,26 @@ class Game:
             self.tui.styled_print(f"\nYou killed the {self.monster}!", fore_color = "green")
             self.killcount += 1
 
-            reward = int(random.uniform(self.difficulty, self.difficulty * 5)) * 2
-            self.money += reward
-            self.tui.styled_print(f"You earned ${reward}!", fore_color = "yellow")
+            if self.boss:
+                self.win()
+            else:
+                reward = int(random.uniform(self.difficulty, self.difficulty * 5)) * 2
+                self.money += reward
+                self.tui.styled_print(f"You earned ${reward}!", fore_color = "yellow")
 
-            time.sleep(2)
-            self.continue_journey()
+                time.sleep(2)
+
+                if random.random() < 0.2 and self.health < self.max_health - 30:
+                    heal_amount = random.randint(10, 30)
+                    self.health = min(self.health + heal_amount, self.max_health)
+                    self.tui.styled_print(f"You found a healing potion! Restored {heal_amount} HP.", fore_color = "green", style = "bold")
+
+                self.continue_journey()
         elif self.health <= 0:
             self.die()
         else:
             setattr(self, monster_health_attr, monster_health)
-            self.encounter(True)
+            self.encounter(True, turns + 1, custom_health, custom_damage)
 
     def continue_journey(self):
         self.tui.clear()
@@ -755,6 +789,32 @@ class Game:
             self.tui.decorative_header("Invalid Choice!", fore_color = "red", width = 40)
             time.sleep(1)
             self.continue_journey()
+
+    def boss_battle(self):
+        self.audio_manager.play_audio("boss", loop = True, stop_previous = False)
+        self.tui.decorative_header("You've encountered the Shadow King!", fore_color = "bold red")
+        time.sleep(1)
+        self.tui.decorative_header("The Shadow King is a formidable opponent. You must defeat him to win the game!", "yellow")
+        time.sleep(3)
+
+        self.monster = "Shadow King"
+        self.boss = True
+
+        self.encounter(custom_health = 200, custom_damage = 100)
+
+    def win(self):
+        self.boss = False
+
+        self.audio_manager.play_audio("win", loop = False, stop_previous = False)
+        self.tui.clear()
+        self.tui.decorative_header("Congratulations!", fore_color = "green")
+
+        self.tui.decorative_header("You defeated the Shadow King and saved the village from his tyranny!", fore_color = "cyan")
+        self.tui.decorative_header("You are a true hero!", fore_color = "cyan")
+
+        time.sleep(3)
+        self.home()
+
 
     def save_game(self):
         self.tui.clear()
@@ -821,8 +881,8 @@ class Game:
 
             try:
                 game_data = json.loads(json_data)
-            except json.JSONDecodeError:
-                raise Exception("Invalid save file.")
+            except json.JSONDecodeError as e:
+                raise Exception("Invalid save file.") from e
             if not all(key in game_data for key in
                        ["difficulty", "health", "money", "killcount", "current_weapon", "monsters"]):
                 raise Exception("Invalid save file.")
