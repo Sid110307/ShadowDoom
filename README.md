@@ -5,11 +5,8 @@ A fantasy console game that I made using Python.
 ## Requirements
 
 - Python 3.6 or higher
-
   - Pygame
-
-  - Colorama
-
+  - Rich
   - Tkinter
 
 ## Usage
@@ -17,15 +14,14 @@ A fantasy console game that I made using Python.
 > Clone the repository to your computer:
 
 ```sh
-$ git clone https://github.com/Sid110307/ShadowDoom
-
+$ git clone https://github.com/Sid110307/ShadowDoom.git
 Cloning into 'ShadowDoom'...
-. . .
 ```
 
-> Open the `Console` folder in your terminal and type:
+> Enter the directory and run the game:
 
 ```sh
+$ cd ShadowDoom
 $ python3 ShadowDoom.py
 # Or just ./ShadowDoom.py for Unix-based systems.
 ```
