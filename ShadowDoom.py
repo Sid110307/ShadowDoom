@@ -43,7 +43,7 @@ class Game:
                                "Whoosh!", "Arghh!", "Paf!", "Slice!", "Wham!", "Bam!"]
         self.monsters_list = ["Ogre", "Orc", "Beast", "Demon", "Giant", "Golem", "Mummy", "Zombie", "Skeleton", "Witch",
                               "Dragon", "Pirate", "Vampire"]
-        self.treasure_list = ["some Dust", "nothing", f"{random.randint(1, 200)} Gold", "An old rusty sword",
+        self.treasure_list = ["some Dust", "nothing", f"${random.randint(1, 200)}", "An old rusty sword",
                               "a Mystery Liquid", "a healing potion", "a Colt Anaconda"]
         self.treasure_weights = [0.25, 0.2, 0.2, 0.2, 0.05, 0.05, 0.05]
         self.reset_player_state()
@@ -271,8 +271,8 @@ class Game:
             self.tui.decorative_header("You don't have any Weapons. Buy them in the Shop!", fore_color = "red")
             time.sleep(2)
             self.audio_manager.stop_audio()
-
             self.home()
+
             return
 
         self.tui.section_title("Equip a Weapon")
@@ -604,11 +604,10 @@ class Game:
         treasure = random.choice(random.choices(population = self.treasure_list, weights = self.treasure_weights))
         self.tui.styled_print(f"{treasure}!", fore_color = "green", style = "bold")
 
-        if "Gold" in treasure:
-            amount = int(treasure.replace("Gold", "").strip())
+        if "$" in treasure:
+            amount = int(treasure.replace("$", "").strip())
             self.money += amount
-            self.money = max(self.money, 0)
-            self.tui.styled_print(f"Ka-Ching! You found {amount} Gold!", fore_color = "yellow")
+            self.tui.styled_print(f"Ka-Ching! You found ${amount}!", fore_color = "yellow")
         elif treasure == "An old rusty sword":
             self.tui.styled_print("You equip the sword.", fore_color = "cyan")
             self.rusty_sword = True
@@ -927,8 +926,6 @@ class Game:
             user_input = input(prompt).strip()
             if user_input.lower() == "m":
                 self.audio_manager.muted = not self.audio_manager.muted
-                if self.audio_manager.muted:
-                    self.audio_manager.stop_audio()
             else:
                 return user_input
 
@@ -944,6 +941,9 @@ if __name__ == "__main__":
         )
         tui.styled_print("Exiting...", fore_color = "red")
         sys.exit(1)
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--mute":
+        audio_manager.muted = True
 
     try:
         Game(tui, audio_manager)

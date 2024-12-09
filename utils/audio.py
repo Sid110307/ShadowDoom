@@ -19,6 +19,7 @@ class AudioManager:
     @muted.setter
     def muted(self, value):
         self.is_muted = value
+        pygame.mixer.music.set_volume(0 if value else 1)
 
     def play_audio(self, file, loop=True, stop_previous=False, volume=100, busy_check=False):
         if (not self.enabled or self.is_muted) or (busy_check and pygame.mixer.music.get_busy()):
