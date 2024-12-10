@@ -582,8 +582,8 @@ class Game:
                 base_damage.extend(damage_list)
                 break
 
-        base_health = [int(h / 1.5) + random.randint(-10, 10) for h in base_health]
-        base_damage = [int(d / 1.5) + random.randint(-3, 3) for d in base_damage]
+        base_health = [h + random.randint(-10, 10) for h in base_health]
+        base_damage = [d + random.randint(-3, 3) for d in base_damage]
 
         self.monster = random.choice(self.monsters_list)
         article = "an" if self.monster[0].lower() in "aeiou" else "a"
@@ -791,7 +791,7 @@ class Game:
                 self.tui.styled_print(f"You earned ${reward}!", fore_color = "yellow")
                 time.sleep(2)
 
-                if random.random() < 0.2 and self.health < self.max_health - 30:
+                if random.random() < 0.2 and self.max_health - self.health < 50:
                     heal_amount = random.randint(10, 30)
                     self.health = min(self.health + heal_amount, self.max_health)
                     self.tui.styled_print(f"You found a healing potion! Restored {heal_amount} HP.",
