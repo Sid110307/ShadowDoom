@@ -37,6 +37,10 @@ class Game:
 
         self.journey_events = [self.pre_battle, self.treasure]
         self.journey_events_chances = [0.75, 0.25]
+        
+        original_sleep = time.sleep
+        self.sleep_enabled = True
+        time.sleep = lambda x: original_sleep(x) if self.sleep_enabled else None
 
         self.main_menu_music = [1, 2, 3]
         self.attack_phrases = ["Slash!", "Bang!", "Pow!", "Boom!", "Splat!", "Bish!", "Bash!", "Biff!", "Ouch!", "Ow!",
@@ -977,6 +981,9 @@ class Game:
             "DIVIDER":                             None,
             "This Game was made possible by you.": None,
             "Keep ShadowDooming!!":                None,
+            "DIVIDER_":                            None,
+            "Tip":                                 "Press 'm' to toggle mute.",
+            "Tip_":                                "Press 't' to toggle UI delays.",
         }
         self.tui.key_value_display(credits_text, align = True, width = 50, fore_color = "yellow")
 
@@ -988,6 +995,8 @@ class Game:
             user_input = input(prompt).strip()
             if user_input.lower() == "m":
                 self.audio_manager.muted = not self.audio_manager.muted
+            elif user_input.lower() == "t":
+                self.sleep_enabled = not self.sleep_enabled
             else:
                 return user_input
 

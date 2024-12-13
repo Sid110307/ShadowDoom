@@ -34,6 +34,8 @@ class TUI:
         max_value_length = max(len(str(value)) for value in items.values() if value is not None)
 
         for key, value in items.items():
+            key = key.replace("_", "")
+
             if key == "DIVIDER":
                 table.add_section()
             else:
