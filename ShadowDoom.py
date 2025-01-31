@@ -88,23 +88,23 @@ class Game:
             self.menu()
 
     def menu(self):
-        self.tui.clear()
-        self.tui.decorative_header("Main Menu", width = 40)
+        while True:
+            self.tui.clear()
+            self.tui.decorative_header("Main Menu", width=40)
+            options = ["Begin a New Game", "Exit", "Credits"]
+            self.tui.render_menu(options, width=40)
 
-        options = ["Begin a New Game", "Exit", "Credits"]
-        self.tui.render_menu(options, width = 40)
-        c = self.input("CHOOSE>> ")
+            c = self.input("CHOOSE>> ")
+            if c == "1":
+                return self.new()
+            elif c == "2":
+                return self.leave()
+            elif c == "3":
+                return self.game_credits()
+            else:
+                self.tui.decorative_header("Invalid Choice!", fore_color="red", width=40)
+                time.sleep(1)
 
-        if c == "1":
-            self.new()
-        elif c == "2":
-            self.leave()
-        elif c == "3":
-            self.game_credits()
-        else:
-            self.tui.decorative_header("Invalid Choice!", fore_color = "red", width = 40)
-            time.sleep(1)
-            self.menu()
 
     def leave(self):
         self.tui.clear()
