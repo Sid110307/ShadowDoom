@@ -1,29 +1,30 @@
 # ShadowDoom
 
-A fantasy console game that I made using Python.
+ShadowDoom is a terminal-based fantasy game written in Python. It combines a styled text interface with sound effects, randomized encounters, combat, treasure, and lightweight progression.
 
 ## Requirements
 
-- Python 3.6 or higher
-  - Pygame
-  - Rich
-  - Tkinter
+- Python 3.6 or newer
+- Pygame
+- Rich
+- Tkinter
 
-## Usage
+Tkinter is bundled with many Python installations, but some Linux distributions package it separately.
 
-> Clone the repository to your computer:
-
-```sh
-$ git clone https://github.com/Sid110307/ShadowDoom.git
-Cloning into 'ShadowDoom'...
-```
-
-> Enter the directory and run the game:
+## Run locally
 
 ```sh
-$ cd ShadowDoom
-$ python3 ShadowDoom.py
-# Or just ./ShadowDoom.py for Unix-based systems.
+git clone https://github.com/Sid110307/ShadowDoom.git
+cd ShadowDoom
+python -m pip install pygame rich
+python ShadowDoom.py
 ```
 
-> Maximize the terminal window for the best experience.
+For the intended layout, run the game in a maximized terminal window. Audio output must be available for the bundled effects and music.
+
+## Project structure
+
+- `ShadowDoom.py` — game loop, encounters, combat, inventory, and menus
+- `utils/tui.py` — terminal rendering helpers
+- `utils/audio.py` — audio playback
+- `audio/` — bundled sound effects and menu audio
